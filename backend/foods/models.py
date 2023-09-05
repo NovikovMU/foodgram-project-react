@@ -12,12 +12,12 @@ MIN_IN_HOUR = 60
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=200)
     color = ColorField()
-    slug = models.SlugField(max_length=255)
+    slug = models.CharField(max_length=200)
 
     def __str__(self) -> str:
-        return self.Slug
+        return self.slug
 
 
 class Ingridient(models.Model):

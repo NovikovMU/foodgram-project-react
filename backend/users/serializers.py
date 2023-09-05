@@ -4,12 +4,18 @@ from users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.BooleanField()
 
     class Meta:
         model = User
         fields = (User.USERNAME_FIELD, 'id') + tuple(User.REQUIRED_FIELDS)
+        extra_kwargs = {'password': {'write_only': True}}
+        
 
     def create(self, validated_data):
-        validated_data.pop('is_subscribed')
-        return User.objects.create(**validated_data)
+        user = User(
+            email=validated_data['email'],
+            username=validated_data['username']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user

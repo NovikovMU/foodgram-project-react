@@ -11,7 +11,7 @@ from users.models import User
 MIN_IN_HOUR = 60
 
 
-class Tag(models.Model):
+class Tags(models.Model):
     name = models.CharField(max_length=200)
     color = ColorField()
     slug = models.CharField(max_length=200)
@@ -20,7 +20,7 @@ class Tag(models.Model):
         return self.slug
 
 
-class Ingridient(models.Model):
+class Ingridients(models.Model):
     name = models.CharField(max_length=255)
     quantity = models.IntegerField()
     unit = models.SmallIntegerField()
@@ -29,7 +29,7 @@ class Ingridient(models.Model):
         return self.name
 
 
-class Receipt(models.Model):
+class Receipts(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -39,29 +39,33 @@ class Receipt(models.Model):
     image = models.ImageField(
         upload_to='foods/images/'
     )
-    description = models.TextField()
-    ingridient = models.ManyToManyField(
-        Ingridient,
+    text = models.TextField()
+    ingridients = models.ManyToManyField(
+        Ingridients,
+        related_name='receipt',
+        through='ReceiptIngridient'
+    )
+    tags = models.ManyToManyField(
+        Tags,
         related_name='receipt'
     )
-    tag = models.ManyToManyField(
-        Tag,
-        related_name='receipt'
-    )
-    time = models.TimeField(
+    cooking_time = models.TimeField(
         auto_now_add=False,
         auto_now=False,
     )
 
-    # def save(self) -> None:
-    #     self.time = time(minute=self.time.min + self.time.hour * MIN_IN_HOUR)
-    #     return super().save(*args, **kwargs)
-
-
-    def clean(self):
-        if self.user == self.author:
-            raise ValidationError(
-                'Primary and secondary inclinations should be different.')
+class ReceiptIngridient(models.Model):
+    receipts = models.ForeignKey(
+        Receipts,
+        on_delete=models.CASCADE,
+        related_name='ingridients_used'
+    )
+    ingridients = models.ForeignKey(
+        Ingridients,
+        on_delete=models.CASCADE,
+        related_name='receipts_used'
+    )
+    amount = models.PositiveIntegerField()
 
 
 class Favorite(models.Model):
@@ -71,7 +75,7 @@ class Favorite(models.Model):
         related_name='fav'
     )
     post = models.ForeignKey(
-        Receipt,
+        Receipts,
         on_delete=models.CASCADE,
         related_name='favorite'
     )

@@ -15,15 +15,21 @@ class Tags(models.Model):
     name = models.CharField(max_length=200)
     color = ColorField()
     slug = models.CharField(max_length=200)
-
+    class Meta:
+        verbose_name = 'Tag'
+        verbose_name_plural = 'Tags'
+    
     def __str__(self) -> str:
         return self.slug
 
 
-class Ingridients(models.Model):
-    name = models.CharField(max_length=255)
-    quantity = models.IntegerField()
-    unit = models.SmallIntegerField()
+class Ingredients(models.Model):
+    name = models.CharField(max_length=200)
+    measurement_unit = models.CharField(max_length=200)
+    class Meta:
+        verbose_name = 'Ingredient'
+        verbose_name_plural = 'Ingredients'
+
 
     def __str__(self) -> str:
         return self.name
@@ -41,7 +47,7 @@ class Receipts(models.Model):
     )
     text = models.TextField()
     ingridients = models.ManyToManyField(
-        Ingridients,
+        Ingredients,
         related_name='receipt',
         through='ReceiptIngridient'
     )
@@ -49,10 +55,16 @@ class Receipts(models.Model):
         Tags,
         related_name='receipt'
     )
-    cooking_time = models.TimeField(
-        auto_now_add=False,
-        auto_now=False,
-    )
+    cooking_time = models.PositiveIntegerField()
+
+
+    class Meta:
+        verbose_name = 'Receipt'
+        verbose_name_plural = 'Receipts'
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class ReceiptIngridient(models.Model):
     receipts = models.ForeignKey(
@@ -61,11 +73,14 @@ class ReceiptIngridient(models.Model):
         related_name='ingridients_used'
     )
     ingridients = models.ForeignKey(
-        Ingridients,
+        Ingredients,
         on_delete=models.CASCADE,
         related_name='receipts_used'
     )
     amount = models.PositiveIntegerField()
+
+    class Meta:
+        pass
 
 
 class Favorite(models.Model):

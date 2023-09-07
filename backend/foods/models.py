@@ -46,14 +46,15 @@ class Receipts(models.Model):
         upload_to='foods/images/'
     )
     text = models.TextField()
-    ingridients = models.ManyToManyField(
+    ingredients = models.ManyToManyField(
         Ingredients,
         related_name='receipt',
-        through='ReceiptIngridient'
+        through='ReceiptsIngredients'
     )
     tags = models.ManyToManyField(
         Tags,
-        related_name='receipt'
+        related_name='receipt',
+        through='ReceiptsTags'
     )
     cooking_time = models.PositiveIntegerField()
 
@@ -66,13 +67,13 @@ class Receipts(models.Model):
         return self.name
 
 
-class ReceiptIngridient(models.Model):
+class ReceiptsIngredients(models.Model):
     receipts = models.ForeignKey(
         Receipts,
         on_delete=models.CASCADE,
-        related_name='ingridients_used'
+        related_name='ingredients_used'
     )
-    ingridients = models.ForeignKey(
+    ingredients = models.ForeignKey(
         Ingredients,
         on_delete=models.CASCADE,
         related_name='receipts_used'
@@ -81,6 +82,19 @@ class ReceiptIngridient(models.Model):
 
     class Meta:
         pass
+
+
+class ReceiptsTags(models.Model):
+    receipts = models.ForeignKey(
+        Receipts,
+        on_delete=models.CASCADE,
+        related_name='tags_used'
+    )
+    tags = models.ForeignKey(
+        Tags,
+        on_delete=models.CASCADE,
+        related_name='receipts_used'
+    )
 
 
 class Favorite(models.Model):

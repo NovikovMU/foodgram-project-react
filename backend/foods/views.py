@@ -1,7 +1,7 @@
 from rest_framework import mixins, viewsets
 
 from .models import Ingredients, Receipts, Tags
-from .serializers import IngredientSerializer, ReceiptReadSerializer, TagSerializer
+from .serializers import IngredientSerializer, ReceiptReadSerializer, ReceiptsCreateUpdateSerializer, TagSerializer
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -10,7 +10,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ReciptViewSet(viewsets.ModelViewSet):
-    serializer_class = ReceiptReadSerializer
+    serializer_class = ReceiptsCreateUpdateSerializer
     queryset = Receipts.objects.all()
 
     def get_serializer_class(self):

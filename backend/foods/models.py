@@ -103,7 +103,7 @@ class Favorite(models.Model):
         on_delete=models.CASCADE,
         related_name='fav'
     )
-    post = models.ForeignKey(
+    receipts = models.ForeignKey(
         Receipts,
         on_delete=models.CASCADE,
         related_name='favorite'

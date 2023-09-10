@@ -12,6 +12,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class ReciptViewSet(viewsets.ModelViewSet):
     serializer_class = ReceiptsCreateUpdateSerializer
     queryset = Receipts.objects.all()
+    http_method_names = ('patch', 'get', 'post', 'delete')
 
     def get_serializer_class(self):
         if self.request.method == 'GET':

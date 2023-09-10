@@ -1,7 +1,23 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from .models import Ingredients, Receipts, ReceiptsIngredients, ReceiptsTags, Tags
 from users.serializers import UserSerializer
+
+def get_datas_from_validated_data(validated_data, author):
+    ingredients = validated_data.pop('ingredients_used')
+    tags = validated_data.pop('tags')
+    validated_data.update(author=author)
+    receipt = Receipts.objects.create(**validated_data)
+    for ingredient in ingredients:
+        ingredients = ingredient.get('ingredients')
+        id = ingredients.get('id')
+        amount = ingredient.get('amount')
+        receipt.ingredients.add(id, through_defaults={'amount':amount})
+    for tag in tags:
+        receipt.tags.add(tag)
+    return receipt
+
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,9 +69,9 @@ class ReceiptReadSerializer(serializers.ModelSerializer):
 
 
 class ReceiptsM2MIngredients(serializers.ModelSerializer):
-    # id = serializers.PrimaryKeyRelatedField(
-    #     queryset=Ingredients.objects.all())
-    id = serializers.IntegerField(source='ingredients.id')
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredients.objects.all(), source='ingredients.id')
+    # id = serializers.IntegerField(source='ingredients.id')
     name = serializers.CharField(source='ingredients.name', read_only=True)
     measurement_unit = serializers.CharField(
         source='ingredients.measurement_unit', read_only=True)
@@ -68,20 +84,6 @@ class ReceiptsM2MIngredients(serializers.ModelSerializer):
             'amount',
         )
 
-
-class ReceiptsM2MSTags(serializers.ModelSerializer):
-    id = serializers.IntegerField(source='tags.id', read_only=True)
-    name = serializers.CharField(source='tags.name', read_only=True)
-    color = serializers.CharField(source='tags.color', read_only=True)
-    slug = serializers.CharField(source='tags.slug', read_only=True)
-    class Meta:
-        model = ReceiptsTags
-        fields = (
-            'id',
-            'name',
-            'color',
-            'slug',
-        )
 
 class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
     ingredients = ReceiptsM2MIngredients(
@@ -106,9 +108,9 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
         )
     
     def create(self, validated_data):
+        author = self.context['request'].user
         ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
-        author = self.context['request'].user
         validated_data.update(author=author)
         receipt = Receipts.objects.create(**validated_data)
         for ingredient in ingredients:
@@ -119,6 +121,23 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
         for tag in tags:
             receipt.tags.add(tag)
         return receipt
+
+    def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients_used')
+        tags = validated_data.pop('tags')
+        instance.ingredients.clear()
+        for ingredient in ingredients:
+            ingredients = ingredient.get('ingredients')
+            id = ingredients.get('id')
+            amount = ingredient.get('amount')
+            instance.ingredients.add(id, through_defaults={'amount':amount})
+        instance.tags.clear()
+        for tag in tags:
+            instance.tags.add(tag)
+        instance.name = validated_data.get('name')
+        instance.text = validated_data.get('text')
+        instance.cooking_time = validated_data.get('cooking_time')
+        return instance
     
     def to_representation(self, instance):
         obj = super(ReceiptsCreateUpdateSerializer, self).to_representation(instance)
@@ -132,6 +151,6 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
                 'color': tag.color,
                 'slug': tag.slug
             }
-            all_trags.append(dict_tag)            
+            all_trags.append(dict_tag)
         obj['tags'] = all_trags
         return obj

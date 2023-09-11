@@ -1,22 +1,8 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import Ingredients, Receipts, ReceiptsIngredients, ReceiptsTags, Tags
+from .models import Ingredients, Favorites, Receipts, ReceiptsIngredients, Tags
 from users.serializers import UserSerializer
-
-def get_datas_from_validated_data(validated_data, author):
-    ingredients = validated_data.pop('ingredients_used')
-    tags = validated_data.pop('tags')
-    validated_data.update(author=author)
-    receipt = Receipts.objects.create(**validated_data)
-    for ingredient in ingredients:
-        ingredients = ingredient.get('ingredients')
-        id = ingredients.get('id')
-        amount = ingredient.get('amount')
-        receipt.ingredients.add(id, through_defaults={'amount':amount})
-    for tag in tags:
-        receipt.tags.add(tag)
-    return receipt
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -24,12 +10,35 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredients
         fields = ('id', 'name', 'measurement_unit')
 
+class ReceiptFavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Receipts
+        fields = (
+            'id',
+            'name',
+            # 'image',
+            'cooking_time',
+        )
+
+        
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorites
+        fields = (
+            'user',
+            'receipts',
+        )
+    def validate(self, attrs):
+        if Favorites.objects.filter(receipts=attrs.get('receipts'), user=attrs.get('user')).exists():
+            raise serializers.ValidationError(
+                {'error': 'Вы уже подписались на этот рецепт.'}
+            )
+        return super().validate(attrs)
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
         fields = ('id', 'name', 'color', 'slug')
-
 
 
 class ReceiptsIngredientsReadSerializer(serializers.ModelSerializer):

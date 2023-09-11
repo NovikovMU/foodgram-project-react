@@ -56,6 +56,11 @@ class Receipts(models.Model):
         related_name='receipt',
         through='ReceiptsTags'
     )
+    user_favorite = models.ManyToManyField(
+        User,
+        related_name='favorite',
+        through='Favorites'
+    )
     cooking_time = models.PositiveIntegerField()
 
 
@@ -85,7 +90,7 @@ class ReceiptsIngredients(models.Model):
 
 
 class ReceiptsTags(models.Model):
-    receipts = models.ForeignKey(
+    receipt = models.ForeignKey(
         Receipts,
         on_delete=models.CASCADE,
         related_name='tags_used'
@@ -97,14 +102,14 @@ class ReceiptsTags(models.Model):
     )
 
 
-class Favorite(models.Model):
+class Favorites(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='fav'
+        related_name='receipts_used'
     )
     receipts = models.ForeignKey(
         Receipts,
         on_delete=models.CASCADE,
-        related_name='favorite'
+        related_name='user_is_subscribed'
     )

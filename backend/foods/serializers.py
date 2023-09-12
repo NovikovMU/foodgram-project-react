@@ -14,6 +14,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class RecipesFavoriteSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
+    
     class Meta:
         model = Recipes
         fields = (
@@ -23,7 +24,7 @@ class RecipesFavoriteSerializer(serializers.ModelSerializer):
             'cooking_time',
         )
 
-        
+
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorites
@@ -31,6 +32,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
             'user',
             'recipes',
         )
+
     def validate(self, attrs):
         if Favorites.objects.filter(recipes=attrs.get('recipes'), user=attrs.get('user')).exists():
             raise serializers.ValidationError(
@@ -56,6 +58,7 @@ class RecipesIngredientsReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredients.id')
     name = serializers.CharField(source='ingredients.name')
     measurement_unit = serializers.CharField(source='ingredients.measurement_unit')
+    
     class Meta:
         model = RecipesIngredients
         fields = (
@@ -68,12 +71,12 @@ class RecipesIngredientsReadSerializer(serializers.ModelSerializer):
 
 class RecipesReadSerializer(serializers.ModelSerializer):
     ingredients = RecipesIngredientsReadSerializer(
-                  
         many=True,
-        source = 'ingredients_used'
+        source='ingredients_used'
     )
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
+    
     class Meta:
         model = Recipes
         fields = (
@@ -95,6 +98,7 @@ class RecipesM2MIngredients(serializers.ModelSerializer):
     name = serializers.CharField(source='ingredients.name', read_only=True)
     measurement_unit = serializers.CharField(
         source='ingredients.measurement_unit', read_only=True)
+    
     class Meta:
         model = RecipesIngredients
         fields = (
@@ -114,7 +118,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         many=True,
         queryset=Tags.objects.all(),
     )
-    
+
     class Meta:
         model = Recipes
         fields = (
@@ -126,7 +130,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time'
         )
-    
+
     def create(self, validated_data):
         author = self.context['request'].user
         ingredients = validated_data.pop('ingredients_used')
@@ -137,7 +141,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
             ingredients = ingredient.get('ingredients')
             id = ingredients.get('id')
             amount = ingredient.get('amount')
-            recipes.ingredients.add(id, through_defaults={'amount':amount})
+            recipes.ingredients.add(id, through_defaults={'amount': amount})
         for tag in tags:
             recipes.tags.add(tag)
         return recipes
@@ -150,7 +154,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
             ingredients = ingredient.get('ingredients')
             id = ingredients.get('id')
             amount = ingredient.get('amount')
-            instance.ingredients.add(id, through_defaults={'amount':amount})
+            instance.ingredients.add(id, through_defaults={'amount': amount})
         instance.tags.clear()
         for tag in tags:
             instance.tags.add(tag)
@@ -158,7 +162,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         instance.text = validated_data.get('text')
         instance.cooking_time = validated_data.get('cooking_time')
         return instance
-    
+
     def to_representation(self, instance):
         obj = super(RecipesCreateUpdateSerializer, self).to_representation(instance)
         ids = obj.get('tags')
@@ -180,6 +184,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
     recipes = RecipesFavoriteSerializer(many=True, source='user_is_subscribed')
     # recipes_count = serializers.IntegerField()
     id = serializers.IntegerField()
+
     class Meta:
         model = Favorites
         fields = ('id', 'recipes')

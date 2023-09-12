@@ -26,7 +26,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk=None):
         recipes = get_object_or_404(Recipes, id=pk)
         user = self.request.user
-        data={
+        data = {
                 'user': user.pk,
                 'recipes': recipes.pk,
             }
@@ -52,6 +52,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         line = 'Test txt file.'
         response.writelines(line)
         return response
+
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tags.objects.all()

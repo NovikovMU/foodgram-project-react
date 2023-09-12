@@ -31,6 +31,8 @@ class UserViewSet(viewsets.ModelViewSet):
             'last_name': author.last_name,
             'recipe': recipes
         }
-        serializer = SubscribeSerializer(data={'id': author.pk, 'recipes': list_result})
+        serializer = SubscribeSerializer(
+            data={'id': author.pk, 'recipes': list_result}
+        )
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)

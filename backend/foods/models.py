@@ -35,11 +35,11 @@ class Ingredients(models.Model):
         return self.name
 
 
-class Receipts(models.Model):
+class Recipes(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='receipt'
+        related_name='recipes'
     )
     name = models.CharField(max_length=255)
     image = models.ImageField(
@@ -48,40 +48,35 @@ class Receipts(models.Model):
     text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredients,
-        related_name='receipt',
-        through='ReceiptsIngredients'
+        related_name='recipes',
+        through='RecipesIngredients'
     )
     tags = models.ManyToManyField(
         Tags,
-        related_name='receipt',
-        through='ReceiptsTags'
-    )
-    user_favorite = models.ManyToManyField(
-        User,
-        related_name='favorite',
-        through='Favorites'
+        related_name='recipes',
+        through='RecipesTags'
     )
     cooking_time = models.PositiveIntegerField()
 
 
     class Meta:
-        verbose_name = 'Receipt'
-        verbose_name_plural = 'Receipts'
+        verbose_name = 'Recipes'
+        verbose_name_plural = 'Recipess'
 
     def __str__(self) -> str:
         return self.name
 
 
-class ReceiptsIngredients(models.Model):
-    receipts = models.ForeignKey(
-        Receipts,
+class RecipesIngredients(models.Model):
+    recipes = models.ForeignKey(
+        Recipes,
         on_delete=models.CASCADE,
         related_name='ingredients_used'
     )
     ingredients = models.ForeignKey(
         Ingredients,
         on_delete=models.CASCADE,
-        related_name='receipts_used'
+        related_name='recipes_used'
     )
     amount = models.PositiveIntegerField()
 
@@ -89,16 +84,16 @@ class ReceiptsIngredients(models.Model):
         pass
 
 
-class ReceiptsTags(models.Model):
-    receipt = models.ForeignKey(
-        Receipts,
+class RecipesTags(models.Model):
+    recipes = models.ForeignKey(
+        Recipes,
         on_delete=models.CASCADE,
         related_name='tags_used'
     )
     tags = models.ForeignKey(
         Tags,
         on_delete=models.CASCADE,
-        related_name='receipts_used'
+        related_name='recipes_used'
     )
 
 
@@ -106,10 +101,10 @@ class Favorites(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='receipts_used'
+        related_name='recipes_used'
     )
-    receipts = models.ForeignKey(
-        Receipts,
+    recipes = models.ForeignKey(
+        Recipes,
         on_delete=models.CASCADE,
         related_name='user_is_subscribed'
     )

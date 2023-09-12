@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import Ingredients, Favorites, Receipts, ReceiptsIngredients, Tags
+from .models import Ingredients, Favorites, Recipes, RecipesIngredients, Tags
 from users.serializers import UserSerializer
+from users.models import User
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -10,9 +11,11 @@ class IngredientSerializer(serializers.ModelSerializer):
         model = Ingredients
         fields = ('id', 'name', 'measurement_unit')
 
-class ReceiptFavoriteSerializer(serializers.ModelSerializer):
+
+class RecipesFavoriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
     class Meta:
-        model = Receipts
+        model = Recipes
         fields = (
             'id',
             'name',
@@ -26,14 +29,22 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = Favorites
         fields = (
             'user',
-            'receipts',
+            'recipes',
         )
     def validate(self, attrs):
-        if Favorites.objects.filter(receipts=attrs.get('receipts'), user=attrs.get('user')).exists():
+        if Favorites.objects.filter(recipes=attrs.get('recipes'), user=attrs.get('user')).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписались на этот рецепт.'}
             )
         return super().validate(attrs)
+
+    def is_valid_on_delete(self, attrs):
+        if not Favorites.objects.filter(recipes=attrs.get('recipes'), user=attrs.get('user')).exists():
+            raise serializers.ValidationError(
+                {'error': 'Вы не подписаны на этот рецепт.'}
+            )
+        return
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,12 +52,12 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug')
 
 
-class ReceiptsIngredientsReadSerializer(serializers.ModelSerializer):
+class RecipesIngredientsReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredients.id')
     name = serializers.CharField(source='ingredients.name')
     measurement_unit = serializers.CharField(source='ingredients.measurement_unit')
     class Meta:
-        model = ReceiptsIngredients
+        model = RecipesIngredients
         fields = (
             'id',
             'name',
@@ -55,8 +66,8 @@ class ReceiptsIngredientsReadSerializer(serializers.ModelSerializer):
         )
 
 
-class ReceiptReadSerializer(serializers.ModelSerializer):
-    ingredients = ReceiptsIngredientsReadSerializer(
+class RecipesReadSerializer(serializers.ModelSerializer):
+    ingredients = RecipesIngredientsReadSerializer(
                   
         many=True,
         source = 'ingredients_used'
@@ -64,7 +75,7 @@ class ReceiptReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
     class Meta:
-        model = Receipts
+        model = Recipes
         fields = (
             'id',
             'tags',
@@ -77,7 +88,7 @@ class ReceiptReadSerializer(serializers.ModelSerializer):
         )
 
 
-class ReceiptsM2MIngredients(serializers.ModelSerializer):
+class RecipesM2MIngredients(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredients.objects.all(), source='ingredients.id')
     # id = serializers.IntegerField(source='ingredients.id')
@@ -85,7 +96,7 @@ class ReceiptsM2MIngredients(serializers.ModelSerializer):
     measurement_unit = serializers.CharField(
         source='ingredients.measurement_unit', read_only=True)
     class Meta:
-        model = ReceiptsIngredients
+        model = RecipesIngredients
         fields = (
             'id',
             'name',
@@ -94,8 +105,8 @@ class ReceiptsM2MIngredients(serializers.ModelSerializer):
         )
 
 
-class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
-    ingredients = ReceiptsM2MIngredients(
+class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
+    ingredients = RecipesM2MIngredients(
         many=True,
         source='ingredients_used'
     )
@@ -105,7 +116,7 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
     )
     
     class Meta:
-        model = Receipts
+        model = Recipes
         fields = (
             'id',
             'ingredients',
@@ -121,15 +132,15 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
         ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
         validated_data.update(author=author)
-        receipt = Receipts.objects.create(**validated_data)
+        recipes = Recipes.objects.create(**validated_data)
         for ingredient in ingredients:
             ingredients = ingredient.get('ingredients')
             id = ingredients.get('id')
             amount = ingredient.get('amount')
-            receipt.ingredients.add(id, through_defaults={'amount':amount})
+            recipes.ingredients.add(id, through_defaults={'amount':amount})
         for tag in tags:
-            receipt.tags.add(tag)
-        return receipt
+            recipes.tags.add(tag)
+        return recipes
 
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients_used')
@@ -149,7 +160,7 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
     
     def to_representation(self, instance):
-        obj = super(ReceiptsCreateUpdateSerializer, self).to_representation(instance)
+        obj = super(RecipesCreateUpdateSerializer, self).to_representation(instance)
         ids = obj.get('tags')
         all_trags = []
         for id in ids:
@@ -163,3 +174,15 @@ class ReceiptsCreateUpdateSerializer(serializers.ModelSerializer):
             all_trags.append(dict_tag)
         obj['tags'] = all_trags
         return obj
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    recipes = RecipesFavoriteSerializer(many=True, source='user_is_subscribed')
+    # recipes_count = serializers.IntegerField()
+    id = serializers.IntegerField()
+    class Meta:
+        model = Favorites
+        fields = ('id', 'recipes')
+
+    def get_recipes_count():
+        pass

@@ -16,13 +16,13 @@ class User(AbstractUser):
 
 
 class Follow(models.Model):
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following'
-    )
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='follower'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following'
     )

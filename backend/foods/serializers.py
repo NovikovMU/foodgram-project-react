@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from .models import Ingredients, Favorites, Recipes, RecipesIngredients, Tags
 from users.serializers import UserSerializer
-from users.models import User
+from users.models import Follow
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -39,13 +39,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
                 {'error': 'Вы уже подписались на этот рецепт.'}
             )
         return super().validate(attrs)
-
-    def is_valid_on_delete(self, attrs):
-        if not Favorites.objects.filter(recipes=attrs.get('recipes'), user=attrs.get('user')).exists():
-            raise serializers.ValidationError(
-                {'error': 'Вы не подписаны на этот рецепт.'}
-            )
-        return
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -181,13 +174,47 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
-    recipes = RecipesFavoriteSerializer(many=True, source='user_is_subscribed')
-    # recipes_count = serializers.IntegerField()
-    id = serializers.IntegerField()
+    email = serializers.CharField(source='author.email', read_only=True)
+    id = serializers.IntegerField(source='author.id', read_only=True)
+    username = serializers.CharField(source='author.username', read_only=True)
+    first_name = serializers.CharField(source='author.first_name', read_only=True)
+    last_name = serializers.CharField(source='author.last_name', read_only=True)
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipesFavoriteSerializer(source='author.recipes', many=True, read_only=True)
 
     class Meta:
-        model = Favorites
-        fields = ('id', 'recipes')
+        model = Follow
+        fields = (
+            'user',
+            'author',
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes'
+        )
+        extra_kwargs = {
+            'user': {'write_only': True},
+            'author': {'write_only': True},
+        }
 
-    def get_recipes_count():
-        pass
+    def validate(self, attrs):
+        if Follow.objects.filter(
+            user=attrs.get('user'), author=attrs.get('author')
+        ).exists():
+            raise serializers.ValidationError(
+                {'error': 'Вы уже подписаны.'}
+            )
+        if attrs.get('user') == attrs.get('author'):
+            raise serializers.ValidationError(
+                {'error': 'Нельзя подписываться на самого себя.'}
+            )
+        return super().validate(attrs)
+
+    def get_is_subscribed(self, obj):
+        print()
+        print(obj.__dict__)
+        print()
+        return False

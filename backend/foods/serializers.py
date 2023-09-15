@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import Ingredients, Favorites, Recipes, RecipesIngredients, Tags
+from .models import Ingredients, Favorites, ShoppingCart, Recipes, RecipesIngredients, Tags
 from users.serializers import UserSerializer
 from users.models import Follow
 
@@ -26,12 +26,23 @@ class RecipesFavoriteSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='recipes.id', read_only=True)
+    name = serializers.CharField(source='recipes.name', read_only=True)
+    cooking_time = serializers.IntegerField(source='recipes.cooking_time', read_only=True)
     class Meta:
         model = Favorites
         fields = (
             'user',
             'recipes',
+            'id',
+            'name',
+            # 'image',
+            'cooking_time',
         )
+        extra_kwargs = {
+            'user': {'write_only': True},
+            'recipes': {'write_only': True},
+        }
 
     def validate(self, attrs):
         if Favorites.objects.filter(recipes=attrs.get('recipes'), user=attrs.get('user')).exists():
@@ -69,6 +80,8 @@ class RecipesReadSerializer(serializers.ModelSerializer):
     )
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
+    is_favorited = serializers.SerializerMethodField(read_only=True),
+    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Recipes
@@ -77,11 +90,19 @@ class RecipesReadSerializer(serializers.ModelSerializer):
             'tags',
             'author',
             'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
             'name',
             'image',
             'text',
             'cooking_time',
         )
+
+    def get_is_favorited(self, obj):
+        return False
+
+    def get_is_in_shopping_cart(self, obj):
+        return False
 
 
 class RecipesM2MIngredients(serializers.ModelSerializer):
@@ -174,6 +195,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
+    count = serializers.IntegerField(read_only=True)
     email = serializers.CharField(source='author.email', read_only=True)
     id = serializers.IntegerField(source='author.id', read_only=True)
     username = serializers.CharField(source='author.username', read_only=True)
@@ -185,6 +207,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = (
+            'count',
             'user',
             'author',
             'email',
@@ -214,7 +237,20 @@ class SubscribeSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
     def get_is_subscribed(self, obj):
-        print()
-        print(obj.__dict__)
-        print()
-        return False
+        return Follow.objects.filter(
+            user=obj.user_id, author=obj.author_id
+        ).exists()
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+
+    def validate(self, attrs):
+        if ShoppingCart.objects.filter(recipe=attrs.get('recipe'), user=attrs.get('user')).exists():
+            raise serializers.ValidationError(
+                {'error': 'Вы уже добавили этот рецепт в список покупок.'}
+            )
+        return super().validate(attrs)

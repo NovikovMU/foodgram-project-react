@@ -1,9 +1,9 @@
 from rest_framework import serializers
-
+from djoser.serializers import UserSerializer as US
 from users.models import Follow, User
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(US):
     is_subscribed = serializers.SerializerMethodField()
     class Meta:
         model = User
@@ -19,9 +19,11 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def get_is_subscribed(self, obj):
-        return Follow.objects.filter(
-            user=self.context['request'].user, author=obj
-        ).exists()
+        return (
+            not self.context['request'].user.is_anonymous
+            and Follow.objects.filter(
+                user=self.context['request'].user, author=obj
+            ).exists())
 
     def create(self, validated_data):
         user = User(**validated_data)

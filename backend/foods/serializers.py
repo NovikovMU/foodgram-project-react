@@ -26,14 +26,14 @@ class RecipesFavoriteSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source='recipes.id', read_only=True)
-    name = serializers.CharField(source='recipes.name', read_only=True)
-    cooking_time = serializers.IntegerField(source='recipes.cooking_time', read_only=True)
+    id = serializers.IntegerField(source='recipe.id', read_only=True)
+    name = serializers.CharField(source='recipe.name', read_only=True)
+    cooking_time = serializers.IntegerField(source='recipe.cooking_time', read_only=True)
     class Meta:
         model = Favorites
         fields = (
             'user',
-            'recipes',
+            'recipe',
             'id',
             'name',
             # 'image',
@@ -41,11 +41,11 @@ class FavoriteSerializer(serializers.ModelSerializer):
         )
         extra_kwargs = {
             'user': {'write_only': True},
-            'recipes': {'write_only': True},
+            'recipe': {'write_only': True},
         }
 
     def validate(self, attrs):
-        if Favorites.objects.filter(recipes=attrs.get('recipes'), user=attrs.get('user')).exists():
+        if Favorites.objects.filter(recipe=attrs.get('recipe'), user=attrs.get('user')).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписались на этот рецепт.'}
             )
@@ -80,8 +80,8 @@ class RecipesReadSerializer(serializers.ModelSerializer):
     )
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
-    is_favorited = serializers.SerializerMethodField(read_only=True),
-    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
     
     class Meta:
         model = Recipes
@@ -96,13 +96,24 @@ class RecipesReadSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time',
+        
         )
 
     def get_is_favorited(self, obj):
-        return False
+        return (
+            not self.context['request'].user.is_anonymous
+            and Favorites.objects.filter(
+            user=self.context['request'].user,
+            recipe=obj
+        ).exists())
 
     def get_is_in_shopping_cart(self, obj):
-        return False
+        return (
+            not self.context['request'].user.is_anonymous
+            and ShoppingCart.objects.filter(
+            user=self.context['request'].user,
+            recipe=obj
+        ).exists())
 
 
 class RecipesM2MIngredients(serializers.ModelSerializer):
@@ -182,7 +193,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         ids = obj.get('tags')
         all_trags = []
         for id in ids:
-            tag = Tags.objects.get(id=id)
+            tag = get_object_or_404(Tags, id=id)
             dict_tag = {
                 'id': tag.id,
                 'name': tag.name,
@@ -203,6 +214,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source='author.last_name', read_only=True)
     is_subscribed = serializers.SerializerMethodField()
     recipes = RecipesFavoriteSerializer(source='author.recipes', many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Follow
@@ -216,7 +228,8 @@ class SubscribeSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'is_subscribed',
-            'recipes'
+            'recipes',
+            'recipes_count',
         )
         extra_kwargs = {
             'user': {'write_only': True},
@@ -235,11 +248,27 @@ class SubscribeSerializer(serializers.ModelSerializer):
                 {'error': 'Нельзя подписываться на самого себя.'}
             )
         return super().validate(attrs)
+    
+    def to_representation(self, instance):
+        print()
+        print(self.__dict__)
+        print()
+        recipes_limit = self.instance.get('recipes_limit')
+        if not recipes_limit:
+            return super().to_representation(instance)
+        obj = super(SubscribeSerializer, self).to_representation(instance)
+        recipes = obj.get('recipes')
+        result = recipes[:int(recipes_limit)]
+        obj['recipes'] = result
+        return obj
 
     def get_is_subscribed(self, obj):
-        return Follow.objects.filter(
+        return (Follow.objects.filter(
             user=obj.user_id, author=obj.author_id
-        ).exists()
+        ).exists())
+    
+    def get_recipes_count(self, obj):
+        return Recipes.objects.filter(author=obj.author).count()
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):

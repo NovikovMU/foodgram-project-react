@@ -2,7 +2,7 @@ from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404, render
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view
-from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from djoser.views import UserViewSet
@@ -18,15 +18,20 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     pagination_class = CommonResultPagination
+    permission_classes = (IsAuthenticated,)
     
     @action(detail=True, methods=('post', 'delete'))
-    def subscribe(self, request, pk=None):
+    def subscribe(self, request, id=None):
+        recipes_limit = self.request.query_params.get('recipes_limit')
         user = self.request.user
-        author = get_object_or_404(User, id=pk)
-        data = {
-            'user': user.pk,
-            'author': author.pk,
-        }
+        author = get_object_or_404(User, id=id)
+        # data = {
+        #     'user': user.pk,
+        #     'author': author.pk,
+        #     'recipes_limit': recipes_limit
+        # }
+        data = [user.pk, author.pk, recipes_limit]
+        
         follow_serializer = SubscribeSerializer(data=data)
         if self.request.method == 'DELETE':
             if not Follow.objects.filter(user=user, author=author).exists():
@@ -39,11 +44,15 @@ class CustomUserViewSet(UserViewSet):
         follow_serializer.save()
         return Response(follow_serializer.data)
 
-    @action(detail=False, methods=('get',), pagination_class=CommonResultPagination, )
+    @action(detail=False, methods=('get',), pagination_class=CommonResultPagination, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
+        recipes_limit = self.request.query_params.get('recipes_limit')
         user = self.request.user
         following = Follow.objects.filter(user=user)
         following = self.paginate_queryset(following)
-        follow_serializer = SubscribeSerializer(data=following, many=True)
+        print()
+        print(type(following))
+        print()
+        follow_serializer = SubscribeSerializer({'recipes_limit': recipes_limit}, data=following, many=True,)
         follow_serializer.is_valid()
         return self.get_paginated_response(follow_serializer.data)

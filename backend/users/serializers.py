@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from djoser.serializers import UserSerializer as US
+from djoser.serializers import UserSerializer as CustomUserSerializer
 from users.models import Follow, User
 
 
-class UserSerializer(US):
+class UserSerializer(CustomUserSerializer):
     is_subscribed = serializers.SerializerMethodField()
     class Meta:
         model = User

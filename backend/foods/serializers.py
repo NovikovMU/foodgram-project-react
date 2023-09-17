@@ -1,7 +1,9 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import Ingredients, Favorites, ShoppingCart, Recipes, RecipesIngredients, Tags
+from .models import (
+    Ingredients, Favorites, ShoppingCart, Recipes, RecipesIngredients, Tags
+)
 from users.serializers import UserSerializer
 from users.models import Follow
 
@@ -28,7 +30,10 @@ class RecipesFavoriteSerializer(serializers.ModelSerializer):
 class FavoriteSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='recipe.id', read_only=True)
     name = serializers.CharField(source='recipe.name', read_only=True)
-    cooking_time = serializers.IntegerField(source='recipe.cooking_time', read_only=True)
+    cooking_time = serializers.IntegerField(
+        source='recipe.cooking_time',
+        read_only=True
+    )
     class Meta:
         model = Favorites
         fields = (
@@ -45,7 +50,9 @@ class FavoriteSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        if Favorites.objects.filter(recipe=attrs.get('recipe'), user=attrs.get('user')).exists():
+        if Favorites.objects.filter(
+            recipe=attrs.get('recipe'), user=attrs.get('user')
+        ).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписались на этот рецепт.'}
             )
@@ -61,7 +68,9 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipesIngredientsReadSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredients.id')
     name = serializers.CharField(source='ingredients.name')
-    measurement_unit = serializers.CharField(source='ingredients.measurement_unit')
+    measurement_unit = serializers.CharField(
+        source='ingredients.measurement_unit'
+    )
     
     class Meta:
         model = RecipesIngredients
@@ -189,7 +198,9 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        obj = super(RecipesCreateUpdateSerializer, self).to_representation(instance)
+        obj = super(
+            RecipesCreateUpdateSerializer, self
+        ).to_representation(instance)
         ids = obj.get('tags')
         all_trags = []
         for id in ids:
@@ -210,10 +221,14 @@ class SubscribeSerializer(serializers.ModelSerializer):
     email = serializers.CharField(source='author.email', read_only=True)
     id = serializers.IntegerField(source='author.id', read_only=True)
     username = serializers.CharField(source='author.username', read_only=True)
-    first_name = serializers.CharField(source='author.first_name', read_only=True)
-    last_name = serializers.CharField(source='author.last_name', read_only=True)
+    first_name = serializers.CharField(
+        source='author.first_name', read_only=True
+    )
+    last_name = serializers.CharField(
+        source='author.last_name', read_only=True
+    )
     is_subscribed = serializers.SerializerMethodField()
-    recipes = RecipesFavoriteSerializer(source='author.recipes', many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -249,17 +264,21 @@ class SubscribeSerializer(serializers.ModelSerializer):
             )
         return super().validate(attrs)
     
+    def get_recipes(self, obj):
+        recipes_limit = self.context.get['request'].query_params.get('recipes_limit')
+        print()
+        print(recipes_limit)
+        print()
+        return recipes_limit
+    
     def to_representation(self, instance):
-        print()
-        print(self.__dict__)
-        print()
-        recipes_limit = self.instance.get('recipes_limit')
-        if not recipes_limit:
-            return super().to_representation(instance)
+    #     recipes_limit = self.instance.get('recipes_limit')
+    #     if not recipes_limit:
+    #         return super().to_representation(instance)
         obj = super(SubscribeSerializer, self).to_representation(instance)
-        recipes = obj.get('recipes')
-        result = recipes[:int(recipes_limit)]
-        obj['recipes'] = result
+    #     recipes = obj.get('recipes')
+    #     result = recipes[:int(recipes_limit)]
+    #     obj['recipes'] = result
         return obj
 
     def get_is_subscribed(self, obj):
@@ -278,7 +297,9 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
         fields = ('user', 'recipe')
 
     def validate(self, attrs):
-        if ShoppingCart.objects.filter(recipe=attrs.get('recipe'), user=attrs.get('user')).exists():
+        if ShoppingCart.objects.filter(
+            recipe=attrs.get('recipe'), user=attrs.get('user')
+        ).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже добавили этот рецепт в список покупок.'}
             )

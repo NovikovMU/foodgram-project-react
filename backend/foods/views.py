@@ -1,13 +1,16 @@
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import serializers, status, viewsets
+from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import CustomFilter
-from .models import Ingredients, Favorites, ShoppingCart, Recipes, Tags
+from .models import (
+    Ingredients, Favorites, ShoppingCart, Recipes, RecipesIngredients, Tags
+)
 from .pagination import CommonResultPagination
 from .perimissions import IsAuthenticatedIsOwnerOrReadOnly
 from .serializers import (
@@ -19,6 +22,8 @@ from .serializers import (
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -27,7 +32,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = CommonResultPagination
     http_method_names = ('patch', 'get', 'post', 'delete')
     permission_classes = (IsAuthenticatedIsOwnerOrReadOnly,)
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = CustomFilter
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -59,7 +64,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=True,
@@ -86,7 +91,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=False,
@@ -100,6 +105,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'Content-Disposition'
         ] = 'attachment; filename=yourreceipes.txt'
         line = 'Test txt file.'
+        result = RecipesIngredients.objects.filter(recipes__user_added_in_shop_cart__user=request.user)
+        print()
+        print(result.values())
+        print()
+        # for res in result:
+        #     print()
+        #     print(res.__dict__)
+        #     print()
+        # print()
+        # print(result.aggregate(Sum('amount')))
+        # print()
         response.writelines(line)
         return response
 

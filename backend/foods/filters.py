@@ -11,10 +11,9 @@ class CustomFilter(filters.FilterSet):
         field_name='is_in_shopping_cart',
         method='filter_is_in_shopping_cart'
     )
-    tags_slug = filters.ModelMultipleChoiceFilter(
+    tags = filters.CharFilter(
         field_name='tags__slug',
-        to_field_name='slug',
-        queryset=Tags.objects.all()
+        lookup_expr='exact',
     )
 
     def filter_is_favorited(self, queryset, name, value):

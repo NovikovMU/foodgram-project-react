@@ -27,7 +27,7 @@ class CustomUserViewSet(UserViewSet):
             'user': user.pk,
             'author': author.pk,
         }
-        follow_serializer = SubscribeSerializer(data=data)
+        follow_serializer = SubscribeSerializer(data=data, context = {'request': request})
         if self.request.method == 'DELETE':
             if not Follow.objects.filter(user=user, author=author).exists():
                 raise serializers.ValidationError(
@@ -37,7 +37,7 @@ class CustomUserViewSet(UserViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         follow_serializer.is_valid(raise_exception=True)
         follow_serializer.save()
-        return Response(follow_serializer.data)
+        return Response(follow_serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=False, methods=('get',),
@@ -46,10 +46,13 @@ class CustomUserViewSet(UserViewSet):
     )
     def subscriptions(self, request):
         """Показывает всех пользователей, на которых пописан пользователь."""
-        # recipes_limit = self.request.query_params.get('recipes_limit')
         user = self.request.user
         following = Follow.objects.filter(user=user)
         following = self.paginate_queryset(following)
-        follow_serializer = SubscribeSerializer(data=following, many=True,)
+        follow_serializer = SubscribeSerializer(
+            data=following,
+            many=True,
+            context = {'request': request}
+        )
         follow_serializer.is_valid()
         return self.get_paginated_response(follow_serializer.data)

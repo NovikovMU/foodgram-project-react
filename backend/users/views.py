@@ -16,6 +16,18 @@ class CustomUserViewSet(UserViewSet):
     queryset = User.objects.all()
     pagination_class = CommonResultPagination
     permission_classes = (IsAuthenticated,)
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {'error': 'Вам запрещено удалять аккаунты.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+    
+    def update(self, request, *args, **kwargs):
+        return Response(
+            {'error': 'Вам запрещено изменять данные аккаунта.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
     
     @action(detail=True, methods=('post', 'delete'))
     def subscribe(self, request, id=None):
@@ -27,7 +39,9 @@ class CustomUserViewSet(UserViewSet):
             'user': user.pk,
             'author': author.pk,
         }
-        follow_serializer = SubscribeSerializer(data=data, context = {'request': request})
+        follow_serializer = SubscribeSerializer(
+            data=data, context = {'request': request}
+        )
         if self.request.method == 'DELETE':
             if not Follow.objects.filter(user=user, author=author).exists():
                 raise serializers.ValidationError(

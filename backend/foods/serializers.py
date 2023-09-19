@@ -232,7 +232,6 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
-    count = serializers.IntegerField(read_only=True)
     email = serializers.CharField(source='author.email', read_only=True)
     id = serializers.IntegerField(source='author.id', read_only=True)
     username = serializers.CharField(source='author.username', read_only=True)
@@ -249,7 +248,6 @@ class SubscribeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = (
-            'count',
             'user',
             'author',
             'email',

@@ -18,6 +18,26 @@ from .serializers import (
     RecipesReadSerializer, RecipesCreateUpdateSerializer, TagSerializer
 )
 
+def favorite_shopping_cart_method(self, pk, serializer, model):
+    recipe = get_object_or_404(Recipes, id=pk)
+    user = self.request.user
+    data = {
+            'user': user.pk,
+            'recipe': recipe.pk,
+        }
+    serializer = serializer(data=data)
+    if self.request.method == 'DELETE':
+        if not model.objects.filter(
+            user=user, recipe=recipe
+        ).exists():
+            raise serializers.ValidationError(
+                {'error': 'Рецепта нет в списке.'}
+            )
+        model.objects.filter(user=user, recipe=recipe).delete()
+        return
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return serializer.data
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
@@ -46,25 +66,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         """Позволяет добавить и удалить рецепт в список любимых."""
-        recipe = get_object_or_404(Recipes, id=pk)
-        user = self.request.user
-        data = {
-                'user': user.pk,
-                'recipe': recipe.pk,
-            }
-        serializer = FavoriteSerializer(data=data)
-        if self.request.method == 'DELETE':
-            if not Favorites.objects.filter(
-                user=user, recipe=recipe
-            ).exists():
-                raise serializers.ValidationError(
-                    {'error': 'Вы не подписаны на этот рецепт.'}
-                )
-            Favorites.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        data = favorite_shopping_cart_method(
+            self, pk, FavoriteSerializer, Favorites)
+        if data:
+            return Response(data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True,
@@ -73,25 +79,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Позволяет добавить и удалить рецепт из корзины."""
-        recipe = get_object_or_404(Recipes, id=pk)
-        user = self.request.user
-        data = {
-                'user': user.pk,
-                'recipe': recipe.pk,
-            }
-        serializer = ShoppingCartSerializer(data=data)
-        if self.request.method == 'DELETE':
-            if not ShoppingCart.objects.filter(
-                user=user, recipe=recipe
-            ).exists():
-                raise serializers.ValidationError(
-                    {'error': 'Вы не подписаны на этот рецепт.'}
-                )
-            ShoppingCart.objects.filter(user=user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        data = favorite_shopping_cart_method(self, pk, ShoppingCartSerializer, ShoppingCart)
+        if data:
+            return Response(data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False,
@@ -104,19 +95,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response[
             'Content-Disposition'
         ] = 'attachment; filename=yourreceipes.txt'
-        line = 'Test txt file.'
-        result = RecipesIngredients.objects.filter(recipes__user_added_in_shop_cart__user=request.user)
-        print()
-        print(result.values())
-        print()
-        # for res in result:
-        #     print()
-        #     print(res.__dict__)
-        #     print()
-        # print()
-        # print(result.aggregate(Sum('amount')))
-        # print()
-        response.writelines(line)
+        text = ''
+        results = RecipesIngredients.objects.filter(
+            recipes__user_added_in_shop_cart__user=request.user
+        )
+        results = results.values(
+            'ingredients__name',
+            'ingredients__measurement_unit'
+        ).annotate(Sum('amount'))
+        for result in results:
+            text = (
+                text + f'{result["ingredients__name"]}, '
+                + f'{result["ingredients__measurement_unit"]}, '
+                + f'{result["amount__sum"]}\n'
+            )
+        response.writelines(text)
         return response
 
 

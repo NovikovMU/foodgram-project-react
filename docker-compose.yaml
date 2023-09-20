@@ -1,0 +1,21 @@
+version: '3'
+volumes:
+  foodgram_db:
+services:
+  foodgram_db:
+    image: postgres:13.10
+    env_file: .env
+    volumes:
+      - foodgram_db:/var/lib/postgresql/data
+  backend:
+    build: ./backend/
+    env_file: .env
+    depends_on:
+      - foodgram_db
+  frontend:
+    env_file: .env
+    build: ./frontend/\
+  gateway:
+    build: ./gateway/
+    ports:
+      - 8000:80 

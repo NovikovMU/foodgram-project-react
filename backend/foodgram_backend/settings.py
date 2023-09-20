@@ -5,10 +5,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = '7i(lh7o(@$sy4ci+qdjpu!n6vvy8d=is41@z&rlseazp*!#ght'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 
-DEBUG = True
+DEBUG = 'true' == os.getenv('DEBUG', default='False').lower()
 
 ALLOWED_HOSTS = []
 
@@ -74,11 +74,15 @@ if DEBUG:
     }
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/data/db.sqlite3',
-        }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'django'),
+        'USER': os.getenv('POSTGRES_USER', 'django'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', 5432)
     }
+}
 
 
 AUTH_PASSWORD_VALIDATORS = [

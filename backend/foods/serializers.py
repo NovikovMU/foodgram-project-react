@@ -285,7 +285,7 @@ class SubscribeSerializer(serializers.ModelSerializer):
                 'name',
                 'image',
                 'cooking_time'
-            )[:int(limits)]
+            ).order_by('-id')[:int(limits)]
         return obj.author.recipes.values()
 
     def get_is_subscribed(self, obj):

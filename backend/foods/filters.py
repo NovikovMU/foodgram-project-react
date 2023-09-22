@@ -20,14 +20,14 @@ class CustomFilter(filters.FilterSet):
         if value:
             return Recipes.objects.filter(
                 user_is_subscribed__user=self.request.user
-            )
+            ).order_by('-id')
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         if value:
             return Recipes.objects.filter(
                 user_added_in_shop_cart__user=self.request.user
-            )
+            ).order_by('-id')
         return queryset
 
     class Meta:

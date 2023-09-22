@@ -47,13 +47,17 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipes.objects.all()
+    # queryset = Recipes.objects.all().order_by('-id')
     serializer_class = RecipesCreateUpdateSerializer
     pagination_class = CommonResultPagination
     http_method_names = ('patch', 'get', 'post', 'delete')
     permission_classes = (IsAuthenticatedIsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = CustomFilter
+    
+    def get_queryset(self):
+        return Recipes.objects.all().order_by('-id')
+
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return RecipesReadSerializer

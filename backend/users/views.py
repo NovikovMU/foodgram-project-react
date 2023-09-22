@@ -61,7 +61,7 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         """Показывает всех пользователей, на которых пописан пользователь."""
         user = self.request.user
-        following = Follow.objects.filter(user=user)
+        following = Follow.objects.filter(user=user).order_by('-id')
         following = self.paginate_queryset(following)
         follow_serializer = SubscribeSerializer(
             data=following,

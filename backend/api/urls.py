@@ -3,6 +3,7 @@ from rest_framework import routers
 
 from foods.views import IngredientViewSet, RecipeViewSet, TagViewSet
 from users.views import CustomUserViewSet
+
 app_name = 'api'
 
 router = routers.DefaultRouter()

@@ -1,17 +1,15 @@
-from django.core.exceptions import ValidationError
+from colorfield.fields import ColorField
+from django.core.validators import MinValueValidator
 from django.db import models
 
-from colorfield.fields import ColorField
-
 from users.models import User
-
 
 MIN_IN_HOUR = 60
 
 
 class Tags(models.Model):
     name = models.CharField(max_length=200)
-    color = ColorField()
+    color = ColorField(unique=True)
     slug = models.CharField(max_length=200)
 
     class Meta:
@@ -55,11 +53,14 @@ class Recipes(models.Model):
         related_name='recipes',
         through='RecipesTags'
     )
-    cooking_time = models.PositiveIntegerField()
+    cooking_time = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)]
+    )
 
     class Meta:
-        verbose_name = 'Recipes'
-        verbose_name_plural = 'Recipess'
+        verbose_name = 'Recipe'
+        verbose_name_plural = 'Recipes'
+        ordering = ['-id']
 
     def __str__(self) -> str:
         return self.name
@@ -76,10 +77,11 @@ class RecipesIngredients(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes_used'
     )
-    amount = models.PositiveIntegerField()
+    amount = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 
     class Meta:
-        pass
+        verbose_name = 'Ingredient in recipe'
+        verbose_name_plural = 'Ingredients in recipes'
 
 
 class RecipesTags(models.Model):
@@ -94,6 +96,10 @@ class RecipesTags(models.Model):
         related_name='recipes_used'
     )
 
+    class Meta:
+        verbose_name = 'Tag in recipe'
+        verbose_name_plural = 'Tags in recipes'
+
 
 class Favorites(models.Model):
     user = models.ForeignKey(
@@ -107,6 +113,10 @@ class Favorites(models.Model):
         related_name='user_is_subscribed'
     )
 
+    class Meta:
+        verbose_name = 'Recipe in favorite'
+        verbose_name_plural = 'Recipes in favorites'
+
 
 class ShoppingCart(models.Model):
     user = models.ForeignKey(
@@ -119,3 +129,7 @@ class ShoppingCart(models.Model):
         on_delete=models.CASCADE,
         related_name='user_added_in_shop_cart'
     )
+
+    class Meta:
+        verbose_name = 'Recipe in shopping cart'
+        verbose_name_plural = 'Recipes in shopping carts'

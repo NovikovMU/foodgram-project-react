@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+
 from .models import Ingredients, Recipes
 
 
@@ -20,15 +21,15 @@ class CustomFilter(filters.FilterSet):
         if value:
             return Recipes.objects.filter(
                 user_is_subscribed__user=self.request.user
-            ).order_by('-id')
-        return queryset.order_by('-id')
+            )
+        return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         if value:
             return Recipes.objects.filter(
                 user_added_in_shop_cart__user=self.request.user
-            ).order_by('-id')
-        return queryset.order_by('-id')
+            )
+        return queryset
 
     class Meta:
         model = Recipes
@@ -42,6 +43,7 @@ class CustomFilter(filters.FilterSet):
 
 class IngredientFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='istartswith')
+
     class Meta:
         model = Ingredients
         fields = (

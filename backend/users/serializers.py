@@ -1,10 +1,12 @@
-from rest_framework import serializers
 from djoser.serializers import UserSerializer as CustomUserSerializer
+from rest_framework import serializers
+
 from users.models import Follow, User
 
 
 class UserSerializer(CustomUserSerializer):
     is_subscribed = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
@@ -30,4 +32,3 @@ class UserSerializer(CustomUserSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
-

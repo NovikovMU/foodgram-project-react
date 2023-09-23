@@ -10,6 +10,11 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['username', 'id', 'first_name', 'last_name',]
     USERNAME_FIELD = 'email'
 
+    class Meta:
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
+        ordering = ['id']
+
     def __str__(self) -> str:
         return self.username
 
@@ -25,3 +30,16 @@ class Follow(models.Model):
         on_delete=models.CASCADE,
         related_name='following'
     )
+
+    class Meta:
+        verbose_name = 'Follow'
+        verbose_name_plural = 'Follows'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'author'],
+                name='unique_fields'),
+            models.CheckConstraint(
+                check=models.Q(user=models.F('author')),
+                name='follow_prevent_self_follow'
+            )
+        ]

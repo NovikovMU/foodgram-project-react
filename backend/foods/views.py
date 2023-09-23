@@ -1,30 +1,30 @@
+
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, serializers, status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import CustomFilter, IngredientFilter
-from .models import (
-    Ingredients, Favorites, ShoppingCart, Recipes, RecipesIngredients, Tags
-)
+from .models import (Favorites, Ingredients, Recipes, RecipesIngredients,
+                     ShoppingCart, Tags)
 from .pagination import CommonResultPagination
 from .perimissions import IsAuthenticatedIsOwnerOrReadOnly
-from .serializers import (
-    IngredientSerializer, FavoriteSerializer, ShoppingCartSerializer,
-    RecipesReadSerializer, RecipesCreateUpdateSerializer, TagSerializer
-)
+from .serializers import (FavoriteSerializer, IngredientSerializer,
+                          RecipesCreateUpdateSerializer, RecipesReadSerializer,
+                          ShoppingCartSerializer, TagSerializer)
+
 
 def favorite_shopping_cart_method(self, pk, serializer, model):
     recipe = get_object_or_404(Recipes, id=pk)
     user = self.request.user
     data = {
-            'user': user.pk,
-            'recipe': recipe.pk,
-        }
+        'user': user.pk,
+        'recipe': recipe.pk,
+    }
     serializer = serializer(data=data)
     if self.request.method == 'DELETE':
         if not model.objects.filter(
@@ -39,6 +39,7 @@ def favorite_shopping_cart_method(self, pk, serializer, model):
     serializer.save()
     return serializer.data
 
+
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredients.objects.all()
     serializer_class = IngredientSerializer
@@ -47,16 +48,15 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    # queryset = Recipes.objects.all().order_by('-id')
     serializer_class = RecipesCreateUpdateSerializer
     pagination_class = CommonResultPagination
     http_method_names = ('patch', 'get', 'post', 'delete')
     permission_classes = (IsAuthenticatedIsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = CustomFilter
-    
+
     def get_queryset(self):
-        return Recipes.objects.all().order_by('-id')
+        return Recipes.objects.all()
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -83,7 +83,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Позволяет добавить и удалить рецепт из корзины."""
-        data = favorite_shopping_cart_method(self, pk, ShoppingCartSerializer, ShoppingCart)
+        data = favorite_shopping_cart_method(
+            self,
+            pk,
+            ShoppingCartSerializer,
+            ShoppingCart
+        )
         if data:
             return Response(data, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_204_NO_CONTENT)

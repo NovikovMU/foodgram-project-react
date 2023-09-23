@@ -4,17 +4,18 @@ from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from .models import (
-    Ingredients, Favorites, ShoppingCart, Recipes, RecipesIngredients, Tags
-)
-from users.serializers import UserSerializer
 from users.models import Follow
+from users.serializers import UserSerializer
+
+from .models import (Favorites, Ingredients, Recipes, RecipesIngredients,
+                     ShoppingCart, Tags)
+
 
 class Base64ImageField(serializers.ImageField):
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')  
-            ext = format.split('/')[-1]  
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
 
@@ -28,7 +29,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 class RecipesFavoriteSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     image = Base64ImageField()
-    
+
     class Meta:
         model = Recipes
         fields = (
@@ -47,6 +48,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
         source='recipe.cooking_time',
         read_only=True
     )
+
     class Meta:
         model = Favorites
         fields = (
@@ -84,7 +86,7 @@ class RecipesIngredientsReadSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.CharField(
         source='ingredients.measurement_unit'
     )
-    
+
     class Meta:
         model = RecipesIngredients
         fields = (
@@ -105,7 +107,7 @@ class RecipesReadSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Recipes
         fields = (
@@ -119,24 +121,25 @@ class RecipesReadSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time',
-        
         )
 
     def get_is_favorited(self, obj):
         return (
             not self.context['request'].user.is_anonymous
             and Favorites.objects.filter(
-            user=self.context['request'].user,
-            recipe=obj
-        ).exists())
+                user=self.context['request'].user,
+                recipe=obj
+            ).exists()
+        )
 
     def get_is_in_shopping_cart(self, obj):
         return (
             not self.context['request'].user.is_anonymous
             and ShoppingCart.objects.filter(
-            user=self.context['request'].user,
-            recipe=obj
-        ).exists())
+                user=self.context['request'].user,
+                recipe=obj
+            ).exists()
+        )
 
 
 class RecipesM2MIngredients(serializers.ModelSerializer):
@@ -145,7 +148,7 @@ class RecipesM2MIngredients(serializers.ModelSerializer):
     name = serializers.CharField(source='ingredients.name', read_only=True)
     measurement_unit = serializers.CharField(
         source='ingredients.measurement_unit', read_only=True)
-    
+
     class Meta:
         model = RecipesIngredients
         fields = (
@@ -279,20 +282,18 @@ class SubscribeSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         limits = self.context.get('request').query_params.get('recipes_limit')
+        recipe = obj.author.recipes
         if limits:
-            return obj.author.recipes.values(
-                'id',
-                'name',
-                'image',
-                'cooking_time'
-            ).order_by('-id')[:int(limits)]
-        return obj.author.recipes.values()
+            return RecipesFavoriteSerializer(
+                recipe, many=True
+            ).data[:int(limits)]
+        return RecipesFavoriteSerializer(recipe, many=True).data
 
     def get_is_subscribed(self, obj):
         return (Follow.objects.filter(
             user=obj.user_id, author=obj.author_id
         ).exists())
-    
+
     def get_recipes_count(self, obj):
         return Recipes.objects.filter(author=obj.author).count()
 
@@ -305,6 +306,7 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
         source='recipe.cooking_time',
         read_only=True
     )
+
     class Meta:
         model = ShoppingCart
         fields = (

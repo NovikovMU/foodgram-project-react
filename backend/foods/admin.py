@@ -1,11 +1,13 @@
 from django.contrib import admin
 
-from .models import Ingredients, Favorites, Recipes, Tags, ShoppingCart, RecipesIngredients, RecipesTags
+from .models import (Favorites, Ingredients, Recipes, RecipesIngredients,
+                     RecipesTags, ShoppingCart, Tags)
 
 
 class RecipesAdmin(admin.ModelAdmin):
-    list_filter = ('name','author', 'tags')
+    list_filter = ('name', 'author', 'tags')
     list_display = ('name', 'amount_favorite')
+
     def amount_favorite(self, obj):
         return Favorites.objects.filter(recipe=obj).count()
 

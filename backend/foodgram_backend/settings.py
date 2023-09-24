@@ -9,7 +9,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = 'true' == os.getenv('DEBUG', default='False').lower()
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'weloveatastyfoods.ddns.net']
 
 AUTH_USER_MODEL = 'users.User'
 

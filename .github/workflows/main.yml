@@ -115,7 +115,7 @@ jobs:
         with:
           context: ./nginx/
           push: true
-          tags: masimn/foodgram_gateway:latest
+          tags: masimn/foodgram_nginx:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -161,4 +161,4 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
-        message: Деплой успешно выполнен!
+        message: CI/CD работает в штатном режиме.

@@ -14,7 +14,7 @@ class CustomFilter(filters.FilterSet):
     )
     tags = filters.CharFilter(
         field_name='tags__slug',
-        lookup_expr='exact',
+        lookup_expr='icontains',
     )
 
     def filter_is_favorited(self, queryset, name, value):

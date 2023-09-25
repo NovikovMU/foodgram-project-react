@@ -16,7 +16,6 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     pagination_class = CommonResultPagination
-    # permission_classes = (IsAuthenticated,)
 
     def destroy(self, request, *args, **kwargs):
         return Response(

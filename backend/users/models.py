@@ -13,7 +13,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'User'
         verbose_name_plural = 'Users'
-        ordering = ['id']
+        ordering = ['username']
 
     def __str__(self) -> str:
         return self.username
@@ -39,7 +39,7 @@ class Follow(models.Model):
                 fields=['user', 'author'],
                 name='unique_fields'),
             models.CheckConstraint(
-                check=models.Q(user=models.F('author')),
+                check=~models.Q(user=models.F('author')),
                 name='follow_prevent_self_follow'
             )
         ]

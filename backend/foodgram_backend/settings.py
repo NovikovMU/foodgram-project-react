@@ -1,15 +1,15 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'asdasdsadsadsad1123feasdgadsgag')
 
-
 DEBUG = 'true' == os.getenv('DEBUG', default='False').lower()
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'weloveatastyfoods.ddns.net']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='localhost').split()
 
 AUTH_USER_MODEL = 'users.User'
 

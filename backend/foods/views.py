@@ -115,8 +115,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         for result in results:
             text = (
                 text + f'{result["ingredients__name"]}, '
-                + f'{result["ingredients__measurement_unit"]}, '
-                + f'{result["amount__sum"]}\n'
+                + f'{result["amount__sum"]} '
+                + f'{result["ingredients__measurement_unit"]},\n'
             )
         response.writelines(text)
         return response

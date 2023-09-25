@@ -38,7 +38,11 @@ class CustomUserViewSet(UserViewSet):
     def me(self, request, *args, **kwargs):
         return super().me(request, *args, **kwargs)
 
-    @action(detail=True, methods=('post', 'delete'))
+    @action(
+        detail=True,
+        methods=('post', 'delete'),
+        permission_classes=(IsAuthenticated,)
+    )
     def subscribe(self, request, id=None):
         """Позволяет подписаться и отписаться на пользователя."""
         user = self.request.user

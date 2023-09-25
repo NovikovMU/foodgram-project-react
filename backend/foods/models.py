@@ -116,6 +116,11 @@ class Favorites(models.Model):
     class Meta:
         verbose_name = 'Recipe in favorite'
         verbose_name_plural = 'Recipes in favorites'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_fav_fields'),
+        ]
 
 
 class ShoppingCart(models.Model):
@@ -133,3 +138,8 @@ class ShoppingCart(models.Model):
     class Meta:
         verbose_name = 'Recipe in shopping cart'
         verbose_name_plural = 'Recipes in shopping carts'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_shcrd_fields'),
+        ]

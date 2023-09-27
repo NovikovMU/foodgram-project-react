@@ -1,4 +1,3 @@
-
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -9,54 +8,45 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import CustomFilter, IngredientFilter
-from .models import (Favorites, Ingredients, Recipes, RecipesIngredients,
-                     ShoppingCart, Tags)
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
 from .pagination import CommonResultPagination
 from .perimissions import IsAuthenticatedIsOwnerOrReadOnly
-from .serializers import (FavoriteSerializer, IngredientSerializer,
+from .serializers import (IngredientSerializer, LiteRecipesSerializer,
                           RecipesCreateUpdateSerializer, RecipesReadSerializer,
-                          ShoppingCartSerializer, TagSerializer)
+                          TagSerializer)
 
 
-def favorite_shopping_cart_method(self, pk, serializer, model):
-    recipe = get_object_or_404(Recipes, id=pk)
-    user = self.request.user
-    data = {
-        'user': user.pk,
-        'recipe': recipe.pk,
-    }
-    serializer = serializer(data=data)
-    if self.request.method == 'DELETE':
-        if not model.objects.filter(
-            user=user, recipe=recipe
-        ).exists():
-            raise serializers.ValidationError(
-                {'error': 'Рецепта нет в списке.'}
-            )
-        model.objects.filter(user=user, recipe=recipe).delete()
-        return
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
+def favorite_shopping_cart_create_method(model, recipe, serializer, user):
+    if model.objects.filter(recipe=recipe, user=user).exists():
+        raise serializers.ValidationError(
+            {'error': 'Вы уже подписаны на этот рецепт.'}
+        )
+    model.objects.create(user=user, recipe=recipe)
+    serializer = serializer(recipe)
     return serializer.data
 
 
+def favorite_shopping_cart_delete_method(model, recipe, user):
+    get_object_or_404(model, recipe=recipe, user=user).delete()
+    return
+
+
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Ingredients.objects.all()
+    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
     serializer_class = RecipesCreateUpdateSerializer
     pagination_class = CommonResultPagination
     http_method_names = ('patch', 'get', 'post', 'delete')
     permission_classes = (IsAuthenticatedIsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = CustomFilter
-
-    def get_queryset(self):
-        return Recipes.objects.all()
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -70,11 +60,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         """Позволяет добавить и удалить рецепт в список любимых."""
-        data = favorite_shopping_cart_method(
-            self, pk, FavoriteSerializer, Favorites)
-        if data:
-            return Response(data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        recipe = get_object_or_404(Recipe, id=pk)
+        user = self.request.user
+        if self.request.method == 'DELETE':
+            favorite_shopping_cart_delete_method(
+                Favorite, recipe, user
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        data = favorite_shopping_cart_create_method(
+            Favorite, recipe, LiteRecipesSerializer, user
+        )
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=True,
@@ -83,15 +79,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Позволяет добавить и удалить рецепт из корзины."""
-        data = favorite_shopping_cart_method(
-            self,
-            pk,
-            ShoppingCartSerializer,
-            ShoppingCart
+        recipe = get_object_or_404(Recipe, id=pk)
+        user = self.request.user
+        if self.request.method == 'DELETE':
+            favorite_shopping_cart_delete_method(
+                ShoppingCart, recipe, user
+            )
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        data = favorite_shopping_cart_create_method(
+            ShoppingCart, recipe, LiteRecipesSerializer, user
         )
-        if data:
-            return Response(data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=False,
@@ -105,10 +103,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'Content-Disposition'
         ] = 'attachment; filename=yourreceipes.txt'
         text = ''
-        results = RecipesIngredients.objects.filter(
-            recipes__user_added_in_shop_cart__user=request.user
-        )
-        results = results.values(
+        results = RecipeIngredient.objects.filter(
+            recipe__user_added_in_shop_cart__user=request.user
+        ).values(
             'ingredients__name',
             'ingredients__measurement_unit'
         ).annotate(Sum('amount'))
@@ -123,5 +120,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Tags.objects.all()
+    queryset = Tag.objects.all()
     serializer_class = TagSerializer

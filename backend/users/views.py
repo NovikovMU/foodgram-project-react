@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from foods.pagination import CommonResultPagination
-from foods.serializers import SubscribeSerializer
-
+from foods.serializers import (SubscribeCreateSerializer,
+                               SubscribeReadSerializer)
 from .models import Follow, User
 from .serializers import UserSerializer
 
@@ -50,7 +50,7 @@ class CustomUserViewSet(UserViewSet):
             'user': user.pk,
             'author': author.pk,
         }
-        follow_serializer = SubscribeSerializer(
+        follow_serializer = SubscribeCreateSerializer(
             data=data, context={'request': request}
         )
         if self.request.method == 'DELETE':
@@ -74,7 +74,7 @@ class CustomUserViewSet(UserViewSet):
         user = self.request.user
         following = Follow.objects.filter(user=user)
         following = self.paginate_queryset(following)
-        follow_serializer = SubscribeSerializer(
+        follow_serializer = SubscribeReadSerializer(
             data=following,
             many=True,
             context={'request': request}

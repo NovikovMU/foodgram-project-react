@@ -11,8 +11,8 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
 
     class Meta:
-        verbose_name = 'User'
-        verbose_name_plural = 'Users'
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
         ordering = ['username']
 
     def __str__(self) -> str:
@@ -32,8 +32,8 @@ class Follow(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Follow'
-        verbose_name_plural = 'Follows'
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],
@@ -43,3 +43,6 @@ class Follow(models.Model):
                 name='follow_prevent_self_follow'
             )
         ]
+
+    def __str__(self) -> str:
+        return f'{self.user} - {self.author}'

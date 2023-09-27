@@ -1,14 +1,25 @@
 from colorfield.fields import ColorField
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
+from .constants import MAX_LENGTH_FOR_CHARFIELD as MLFCH
+from .constants import MAX_LENGTH_FOR_CHARFIELD_NAME as MLFCHN
+from .constants import POSITIVE_MAX_COOKING_TIME as PMCK
+from .constants import POSITIVE_MIN_NUMBER as PMN
+
+
+def empty_validate(value):
+    if not value.exists():
+        raise ValidationError('Поле не может быть пустым.')
+    return value
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=MLFCH)
     color = ColorField(unique=True)
-    slug = models.CharField(max_length=200)
+    slug = models.CharField(max_length=MLFCH)
 
     class Meta:
         verbose_name = 'Тег'
@@ -19,8 +30,8 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=200)
-    measurement_unit = models.CharField(max_length=200)
+    name = models.CharField(max_length=MLFCH)
+    measurement_unit = models.CharField(max_length=MLFCH)
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -41,7 +52,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipe'
     )
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=MLFCHN)
     image = models.ImageField(
         upload_to='foods/images/'
     )
@@ -49,7 +60,7 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         related_name='recipe',
-        through='RecipeIngredient'
+        through='RecipeIngredient',
     )
     tags = models.ManyToManyField(
         Tag,
@@ -57,7 +68,7 @@ class Recipe(models.Model):
         through='RecipeTag'
     )
     cooking_time = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(240)]
+        validators=[MinValueValidator(PMN), MaxValueValidator(PMCK)]
     )
 
     class Meta:
@@ -78,13 +89,18 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='recipe_used'
+        related_name='recipe_used',
     )
-    amount = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    amount = models.PositiveIntegerField(validators=[MinValueValidator(PMN)])
 
     class Meta:
         verbose_name = 'Ингредиент используемый в рецепте'
         verbose_name_plural = 'Ингредиенты используемые в рецептах'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'recipe'],
+                name='unique_ingredient_recipe_fields'),
+        ]
 
     def __str__(self) -> str:
         return f'{self.recipe} - {self.ingredient}'
@@ -99,12 +115,17 @@ class RecipeTag(models.Model):
     tag = models.ForeignKey(
         Tag,
         on_delete=models.CASCADE,
-        related_name='recipe_used'
+        related_name='recipe_used',
     )
 
     class Meta:
         verbose_name = 'Тег указанный в рецепте'
         verbose_name_plural = 'Теги указанные в рецептах'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tag', 'recipe'],
+                name='unique_tag_recipe_fields'),
+        ]
 
     def __str__(self) -> str:
         return f'{self.recipe} - {self.tag}'

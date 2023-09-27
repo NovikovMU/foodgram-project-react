@@ -1,11 +1,12 @@
 import base64
 
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from users.models import Follow
 from users.serializers import UserSerializer
-
+from .constants import POSITIVE_MAX_COOKING_TIME, POSITIVE_MIN_NUMBER
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
 
@@ -23,19 +24,6 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
-
-
-class LiteRecipesSerializer(serializers.ModelSerializer):
-    image = Base64ImageField()
-
-    class Meta:
-        model = Recipe
-        fields = (
-            'id',
-            'name',
-            'image',
-            'cooking_time',
-        )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -108,7 +96,6 @@ class RecipesReadSerializer(serializers.ModelSerializer):
 
 class RecipesM2MIngredients(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
-    amount = serializers.IntegerField(source='ingredient.amount')
 
     class Meta:
         model = RecipeIngredient
@@ -116,6 +103,14 @@ class RecipesM2MIngredients(serializers.ModelSerializer):
             'id',
             'amount',
         )
+
+    def validate(self, attrs):
+        get_object_or_404(Ingredient, id=attrs.get('ingredient')['id'])
+        if POSITIVE_MIN_NUMBER > attrs.get('amount'):
+            raise serializers.ValidationError(
+                {'ingredient_error': 'Количество должно быть больше 1.'}
+            )
+        return super().validate(attrs)
 
 
 class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
@@ -142,12 +137,14 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         )
 
     def add_ingredinets_into_recipe(self, ingredients, recipe):
-        array = [RecipeIngredient(
-            ingredient=Ingredient.objects.get(
-                id=ingredient.get('ingredient').get('id')
-            ),
-            amount=ingredient.get('ingredient').get('amount'),
-            recipe=recipe) for ingredient in ingredients
+        array = [
+            RecipeIngredient(
+                ingredient=Ingredient.objects.get(
+                    id=ingredient.get('ingredient').get('id')
+                ),
+                amount=ingredient.get('amount'),
+                recipe=recipe
+            ) for ingredient in ingredients
         ]
         RecipeIngredient.objects.bulk_create(array)
         return
@@ -156,6 +153,33 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         array = [RecipeTag(recipe=recipe, tag=tag) for tag in tags]
         RecipeTag.objects.bulk_create(array)
         return
+
+    def validate(self, attrs):
+        tags = attrs.get('tags')
+        if not tags:
+            raise serializers.ValidationError(
+                {'tag_error': 'Должен быть хотя бы один тег.'}
+            )
+        if len(tags) != len(set(tags)):
+            raise serializers.ValidationError(
+                {'tag_error': 'Теги должны быть разными.'}
+            )
+        cooking_time = attrs.get('cooking_time')
+        if cooking_time < POSITIVE_MIN_NUMBER:
+            raise serializers.ValidationError(
+                {
+                    'cooking_time_error':
+                    'Время приготовления должно быть больше 1 минуты.'
+                }
+            )
+        if cooking_time > POSITIVE_MAX_COOKING_TIME:
+            raise serializers.ValidationError(
+                {
+                    'cooking_time_error':
+                    'Время приготовления должно быть меньше 240 минут.'
+                }
+            )
+        return super().validate(attrs)
 
     def create(self, validated_data):
         author = self.context['request'].user
@@ -182,6 +206,19 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         context = {'request': request}
         return RecipesReadSerializer(instance, context=context).data
+
+
+class LiteRecipesSerializer(serializers.ModelSerializer):
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time',
+        )
 
 
 class SubscribeReadSerializer(serializers.ModelSerializer):

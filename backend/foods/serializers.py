@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from users.models import Follow
 from users.serializers import UserSerializer
+
 from .constants import POSITIVE_MAX_COOKING_TIME, POSITIVE_MIN_NUMBER
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)

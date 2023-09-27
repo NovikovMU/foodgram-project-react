@@ -4,6 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
+
 from .constants import MAX_LENGTH_FOR_CHARFIELD as MLFCH
 from .constants import MAX_LENGTH_FOR_CHARFIELD_NAME as MLFCHN
 from .constants import POSITIVE_MAX_COOKING_TIME as PMCK

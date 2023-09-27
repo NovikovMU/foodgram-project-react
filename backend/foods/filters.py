@@ -12,12 +12,11 @@ class CustomFilter(filters.FilterSet):
         field_name='is_in_shopping_cart',
         method='filter_is_in_shopping_cart'
     )
-    tags = filters.CharFilter(
-        field_name='tags__slug',
-        lookup_expr='iexact',
-    )
+    tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
 
     def filter_is_favorited(self, queryset, name, value):
+        if self.request.user.is_anonymous:
+            return Recipe.objects.none()
         if value:
             return Recipe.objects.filter(
                 user_add_in_favorite__user=self.request.user
@@ -25,6 +24,8 @@ class CustomFilter(filters.FilterSet):
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
+        if self.request.user.is_anonymous:
+            return Recipe.objects.none()
         if value:
             return Recipe.objects.filter(
                 user_added_in_shop_cart__user=self.request.user

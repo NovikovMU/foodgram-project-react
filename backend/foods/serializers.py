@@ -156,6 +156,16 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         return
 
     def validate(self, attrs):
+        ingredients = attrs.get('ingredient_used')
+        if not ingredients:
+            raise serializers.ValidationError(
+                {'ingredient_error': 'Должен быть хотя бы один ингредиент.'}
+            )
+        ingredient_array = [x.get('ingredient')['id'] for x in ingredients]
+        if len(ingredient_array) != len(set(ingredient_array)):
+            raise serializers.ValidationError(
+                {'tag_error': 'Ингредиент должны быть разными.'}
+            )
         tags = attrs.get('tags')
         if not tags:
             raise serializers.ValidationError(

@@ -7,6 +7,7 @@ from rest_framework import serializers
 from users.models import Follow
 from users.serializers import UserSerializer
 
+from .constants import MAX_LENGTH_FOR_CHARFIELD as MLFCH
 from .constants import POSITIVE_MAX_COOKING_TIME, POSITIVE_MIN_NUMBER
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
@@ -156,6 +157,15 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         return
 
     def validate(self, attrs):
+        name = attrs.get('name')
+        if not name:
+            raise serializers.ValidationError(
+                {'name_error': 'Введите имя.'}
+            )
+        if len(name) > MLFCH:
+            raise serializers.ValidationError(
+                {'name_error': 'Превышено кол-во символов в имени.'}
+            )
         ingredients = attrs.get('ingredient_used')
         if not ingredients:
             raise serializers.ValidationError(

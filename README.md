@@ -85,5 +85,6 @@ TELEGRAM_TOKEN=<токен вашего бота>
 USER=<username для подключения к серверу>
 ```
 Если все данные заполнены правильно, то после каждого пуша в master ветку вам в телеграмм будет приходить сообщение о пересборке dockerа на удалённом сервере.
-# Фото пройденных тесто CI/CD
-![alt text](https://github.com/NovikovMU/foodgram-project-react/blob/master/check.png?raw=true)
+
+# Тесты CI/CD
+![alt text](https://github.com/NovikovMU/foodgram-project-react/actions)

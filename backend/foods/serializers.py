@@ -7,8 +7,7 @@ from rest_framework import serializers
 from users.models import Follow
 from users.serializers import UserSerializer
 
-from .constants import MAX_LENGTH_FOR_CHARFIELD as MLFCH
-from .constants import POSITIVE_MAX_COOKING_TIME, POSITIVE_MIN_NUMBER
+from .constants import MAX_LENGTH_CHARFIELD, MAX_COOKING_TIME, MIN_AMOUNT, MIN_COOKING_TIME
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
 
@@ -81,8 +80,7 @@ class RecipesReadSerializer(serializers.ModelSerializer):
         return (
             not self.context['request'].user.is_anonymous
             and Favorite.objects.filter(
-                user=self.context['request'].user,
-                recipe=obj
+                user__recipe_in_favorite__recipe=obj
             ).exists()
         )
 
@@ -90,8 +88,7 @@ class RecipesReadSerializer(serializers.ModelSerializer):
         return (
             not self.context['request'].user.is_anonymous
             and ShoppingCart.objects.filter(
-                user=self.context['request'].user,
-                recipe=obj
+                user__recipe_in_shop_cart__recipe=obj
             ).exists()
         )
 
@@ -108,7 +105,7 @@ class RecipesM2MIngredients(serializers.ModelSerializer):
 
     def validate(self, attrs):
         get_object_or_404(Ingredient, id=attrs.get('ingredient')['id'])
-        if POSITIVE_MIN_NUMBER > attrs.get('amount'):
+        if MIN_AMOUNT > attrs.get('amount'):
             raise serializers.ValidationError(
                 {'ingredient_error': 'Количество должно быть больше 1.'}
             )
@@ -139,7 +136,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         )
 
     def add_ingredinets_into_recipe(self, ingredients, recipe):
-        array = [
+        recipe_ingredient_array = [
             RecipeIngredient(
                 ingredient=Ingredient.objects.get(
                     id=ingredient.get('ingredient').get('id')
@@ -148,13 +145,11 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
                 recipe=recipe
             ) for ingredient in ingredients
         ]
-        RecipeIngredient.objects.bulk_create(array)
-        return
+        RecipeIngredient.objects.bulk_create(recipe_ingredient_array)
 
     def add_tags_into_recipe(self, recipe, tags):
-        array = [RecipeTag(recipe=recipe, tag=tag) for tag in tags]
-        RecipeTag.objects.bulk_create(array)
-        return
+        recipe_tag_array = [RecipeTag(recipe=recipe, tag=tag) for tag in tags]
+        RecipeTag.objects.bulk_create(recipe_tag_array)
 
     def validate(self, attrs):
         name = attrs.get('name')
@@ -162,7 +157,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'name_error': 'Введите имя.'}
             )
-        if len(name) > MLFCH:
+        if len(name) > MAX_LENGTH_CHARFIELD:
             raise serializers.ValidationError(
                 {'name_error': 'Превышено кол-во символов в имени.'}
             )
@@ -186,14 +181,14 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
                 {'tag_error': 'Теги должны быть разными.'}
             )
         cooking_time = attrs.get('cooking_time')
-        if cooking_time < POSITIVE_MIN_NUMBER:
+        if cooking_time < MIN_COOKING_TIME:
             raise serializers.ValidationError(
                 {
                     'cooking_time_error':
                     'Время приготовления должно быть больше 1 минуты.'
                 }
             )
-        if cooking_time > POSITIVE_MAX_COOKING_TIME:
+        if cooking_time > MAX_COOKING_TIME:
             raise serializers.ValidationError(
                 {
                     'cooking_time_error':
@@ -286,7 +281,7 @@ class SubscribeReadSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         return (Follow.objects.filter(
-            user=obj.user_id, author=obj.author_id
+            user__follower__author=obj.author_id
         ).exists())
 
     def get_recipes_count(self, obj):
@@ -309,7 +304,7 @@ class SubscribeCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if Follow.objects.filter(
-            user=attrs.get('user'), author=attrs.get('author')
+            user__follower__author=attrs.get('author')
         ).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны.'}

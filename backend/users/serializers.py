@@ -24,7 +24,7 @@ class UserSerializer(CustomUserSerializer):
         return (
             not self.context['request'].user.is_anonymous
             and Follow.objects.filter(
-                user=self.context['request'].user, author=obj
+                user__follower__author=obj
             ).exists())
 
     def create(self, validated_data):

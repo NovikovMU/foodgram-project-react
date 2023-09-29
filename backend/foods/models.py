@@ -5,22 +5,13 @@ from django.db import models
 
 from users.models import User
 
-from .constants import MAX_LENGTH_FOR_CHARFIELD as MLFCH
-from .constants import MAX_LENGTH_FOR_CHARFIELD_NAME as MLFCHN
-from .constants import POSITIVE_MAX_COOKING_TIME as PMCK
-from .constants import POSITIVE_MIN_NUMBER as PMN
-
-
-def empty_validate(value):
-    if not value.exists():
-        raise ValidationError('Поле не может быть пустым.')
-    return value
+from .constants import MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD, MAX_LENGTH_CHARFIELD_NAME, MIN_AMOUNT, MIN_COOKING_TIME
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=MLFCH)
+    name = models.CharField(max_length=MAX_LENGTH_CHARFIELD)
     color = ColorField(unique=True)
-    slug = models.CharField(max_length=MLFCH)
+    slug = models.CharField(max_length=MAX_LENGTH_CHARFIELD)
 
     class Meta:
         verbose_name = 'Тег'
@@ -31,8 +22,8 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=MLFCH)
-    measurement_unit = models.CharField(max_length=MLFCH)
+    name = models.CharField(max_length=MAX_LENGTH_CHARFIELD)
+    measurement_unit = models.CharField(max_length=MAX_LENGTH_CHARFIELD)
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -53,7 +44,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipe'
     )
-    name = models.CharField(max_length=MLFCHN)
+    name = models.CharField(max_length=MAX_LENGTH_CHARFIELD_NAME)
     image = models.ImageField(
         upload_to='foods/images/'
     )
@@ -69,7 +60,10 @@ class Recipe(models.Model):
         through='RecipeTag'
     )
     cooking_time = models.PositiveIntegerField(
-        validators=[MinValueValidator(PMN), MaxValueValidator(PMCK)]
+        validators=[
+            MinValueValidator(MIN_COOKING_TIME),
+            MaxValueValidator(MAX_COOKING_TIME)
+        ]
     )
 
     class Meta:
@@ -92,7 +86,9 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         related_name='recipe_used',
     )
-    amount = models.PositiveIntegerField(validators=[MinValueValidator(PMN)])
+    amount = models.PositiveIntegerField(validators=[
+        MinValueValidator(MIN_AMOUNT)
+    ])
 
     class Meta:
         verbose_name = 'Ингредиент используемый в рецепте'

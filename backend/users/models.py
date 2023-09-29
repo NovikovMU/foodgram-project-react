@@ -1,15 +1,14 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from foods.constants import MAX_CHAR_EMAIL_LENGTH as MCHEL
-from foods.constants import MAX_CHAR_LENGTH as MCHL
+from foods.constants import MAX_CHAR_EMAIL_LENGTH, MAX_CHAR_USER_LENGTH
 
 
 class User(AbstractUser):
-    password = models.CharField(max_length=MCHL)
-    email = models.EmailField(max_length=MCHEL, unique=True)
-    first_name = models.CharField(max_length=MCHL)
-    last_name = models.CharField(max_length=MCHL)
+    password = models.CharField(max_length=MAX_CHAR_USER_LENGTH)
+    email = models.EmailField(max_length=MAX_CHAR_EMAIL_LENGTH, unique=True)
+    first_name = models.CharField(max_length=MAX_CHAR_USER_LENGTH)
+    last_name = models.CharField(max_length=MAX_CHAR_USER_LENGTH)
     REQUIRED_FIELDS = ['username', 'id', 'first_name', 'last_name']
     USERNAME_FIELD = 'email'
 

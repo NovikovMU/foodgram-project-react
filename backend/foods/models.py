@@ -3,9 +3,15 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
+
 from .constants import (MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD,
                         MAX_LENGTH_CHARFIELD_NAME, MIN_AMOUNT,
                         MIN_COOKING_TIME)
+
+
+def validate_bar(value):
+    print('>>>', value)
+    return value
 
 
 class Tag(models.Model):
@@ -53,6 +59,7 @@ class Recipe(models.Model):
         Ingredient,
         related_name='recipe',
         through='RecipeIngredient',
+        validators=[validate_bar]
     )
     tags = models.ManyToManyField(
         Tag,
@@ -73,6 +80,13 @@ class Recipe(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    # def clean(self) -> None:
+    #     print('>>>', self.ingredients)
+    #     return super().clean()
+
+    # def save(self, *args, **kwargs):
+    #     print('>>>', self.ingredients)
 
 
 class RecipeIngredient(models.Model):

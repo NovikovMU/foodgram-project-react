@@ -2,7 +2,7 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import serializers, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,18 +12,20 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .pagination import CommonResultPagination
 from .perimissions import IsAuthenticatedIsOwnerOrReadOnly
-from .serializers import (IngredientSerializer, LiteRecipesSerializer,
-                          RecipesCreateUpdateSerializer, RecipesReadSerializer,
+from .serializers import (IngredientSerializer, RecipesCreateUpdateSerializer,
+                          RecipesReadSerializer, ShoppingCartCreateSerializer,
                           TagSerializer)
 
 
 def favorite_shopping_cart_create_method(model, recipe, serializer, user):
-    if model.objects.filter(recipe=recipe, user=user).exists():
-        raise serializers.ValidationError(
-            {'error': 'Вы уже подписаны на этот рецепт.'}
-        )
-    model.objects.create(user=user, recipe=recipe)
-    serializer = serializer(recipe)
+    data = {
+        'user': user.id,
+        'recipe': recipe.id,
+    }
+
+    serializer = serializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
     return serializer.data
 
 
@@ -68,7 +70,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
         data = favorite_shopping_cart_create_method(
-            Favorite, recipe, LiteRecipesSerializer, user
+            Favorite, recipe, ShoppingCartCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -87,7 +89,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
         data = favorite_shopping_cart_create_method(
-            ShoppingCart, recipe, LiteRecipesSerializer, user
+            ShoppingCart, recipe, ShoppingCartCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)
 

@@ -7,7 +7,8 @@ from rest_framework import serializers
 from users.models import Follow
 from users.serializers import UserSerializer
 
-from .constants import MAX_LENGTH_CHARFIELD, MAX_COOKING_TIME, MIN_AMOUNT, MIN_COOKING_TIME
+from .constants import (MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD, MIN_AMOUNT,
+                        MIN_COOKING_TIME)
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
 
@@ -237,7 +238,7 @@ class LiteRecipesSerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeReadSerializer(serializers.ModelSerializer):
+class SubscribeReadSerializer(UserSerializer):
     email = serializers.CharField(source='author.email', read_only=True)
     id = serializers.IntegerField(source='author.id', read_only=True)
     username = serializers.CharField(source='author.username', read_only=True)
@@ -273,11 +274,15 @@ class SubscribeReadSerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         limits = self.context.get('request').query_params.get('recipes_limit')
         recipe = obj.author.recipe
+        result = LiteRecipesSerializer(recipe, many=True).data
         if limits:
-            return LiteRecipesSerializer(
-                recipe, many=True
-            ).data[:int(limits)]
-        return LiteRecipesSerializer(recipe, many=True).data
+            try:
+                result = result[:int(limits)]
+            except ValueError:
+                raise serializers.ValidationError({
+                    'recipes_limit_error': 'Нельзя вводить буквы алфавита.'
+                })
+        return result
 
     def get_is_subscribed(self, obj):
         return (Follow.objects.filter(
@@ -314,3 +319,27 @@ class SubscribeCreateSerializer(serializers.ModelSerializer):
                 {'error': 'Нельзя подписываться на самого себя.'}
             )
         return super().validate(attrs)
+
+
+class ShoppingCartCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('recipe', 'user')
+
+    def validate(self, attrs):
+        user = attrs.get('user')
+        if ShoppingCart.objects.filter(
+            recipe__user_added_in_shop_cart__user=user
+        ).exists():
+            raise serializers.ValidationError(
+                {'error': 'Вы уже подписаны на этот рецепт.'}
+            )
+        return super().validate(attrs)
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return LiteRecipesSerializer(
+            instance.recipe, context=context
+        ).data

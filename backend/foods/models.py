@@ -1,11 +1,11 @@
 from colorfield.fields import ColorField
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from users.models import User
-
-from .constants import MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD, MAX_LENGTH_CHARFIELD_NAME, MIN_AMOUNT, MIN_COOKING_TIME
+from .constants import (MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD,
+                        MAX_LENGTH_CHARFIELD_NAME, MIN_AMOUNT,
+                        MIN_COOKING_TIME)
 
 
 class Tag(models.Model):

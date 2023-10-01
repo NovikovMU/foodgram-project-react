@@ -6,15 +6,17 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
 from .constants import MIN_AMOUNT
 
+
 class IngredientTagInLineFormset(BaseInlineFormSet):
     def clean(self):
         result_list = self.cleaned_data
         for resut in reversed(result_list):
-            if not resut or resut['DELETE'] == True:
+            if not resut or resut['DELETE'] is True:
                 result_list.pop(result_list.index(resut))
         if not result_list:
             raise ValidationError('Должно быть хотя бы одно поле.')
         return super().clean()
+
 
 class IngredientAdmin(admin.TabularInline):
     formset = IngredientTagInLineFormset

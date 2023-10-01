@@ -8,7 +8,6 @@ from rest_framework.response import Response
 from foods.pagination import CommonResultPagination
 from foods.serializers import (SubscribeCreateSerializer,
                                SubscribeReadSerializer)
-
 from .models import Follow, User
 from .serializers import UserSerializer
 

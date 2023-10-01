@@ -17,7 +17,7 @@ from .serializers import (IngredientSerializer, RecipesCreateUpdateSerializer,
                           TagSerializer)
 
 
-def favorite_shopping_cart_create_method(model, recipe, serializer, user):
+def favorite_shopping_cart_create_method(recipe, serializer, user):
     data = {
         'user': user.id,
         'recipe': recipe.id,
@@ -70,7 +70,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
         data = favorite_shopping_cart_create_method(
-            Favorite, recipe, ShoppingCartCreateSerializer, user
+            recipe, ShoppingCartCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -89,7 +89,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
         data = favorite_shopping_cart_create_method(
-            ShoppingCart, recipe, ShoppingCartCreateSerializer, user
+            recipe, ShoppingCartCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)
 

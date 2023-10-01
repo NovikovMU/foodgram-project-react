@@ -8,11 +8,6 @@ from .constants import (MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD,
                         MIN_COOKING_TIME)
 
 
-def validate_bar(value):
-    print('>>>', value)
-    return value
-
-
 class Tag(models.Model):
     name = models.CharField(max_length=MAX_LENGTH_CHARFIELD)
     color = ColorField(unique=True)
@@ -58,7 +53,6 @@ class Recipe(models.Model):
         Ingredient,
         related_name='recipe',
         through='RecipeIngredient',
-        validators=[validate_bar]
     )
     tags = models.ManyToManyField(
         Tag,
@@ -79,13 +73,6 @@ class Recipe(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
-    # def clean(self) -> None:
-    #     print('>>>', self.ingredients)
-    #     return super().clean()
-
-    # def save(self, *args, **kwargs):
-    #     print('>>>', self.ingredients)
 
 
 class RecipeIngredient(models.Model):

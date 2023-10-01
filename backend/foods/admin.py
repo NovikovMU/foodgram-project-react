@@ -1,17 +1,31 @@
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+from django.forms import BaseInlineFormSet
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
+from .constants import MIN_AMOUNT
 
+class IngredientTagInLineFormset(BaseInlineFormSet):
+    def clean(self):
+        result_list = self.cleaned_data
+        for resut in reversed(result_list):
+            if not resut or resut['DELETE'] == True:
+                result_list.pop(result_list.index(resut))
+        if not result_list:
+            raise ValidationError('Должно быть хотя бы одно поле.')
+        return super().clean()
 
 class IngredientAdmin(admin.TabularInline):
+    formset = IngredientTagInLineFormset
     model = RecipeIngredient
-    min_num = 1
+    min_num = MIN_AMOUNT
 
 
 class TagAdmin(admin.TabularInline):
+    formset = IngredientTagInLineFormset
     model = RecipeTag
-    min_num = 1
+    min_num = MIN_AMOUNT
 
 
 class RecipeAdmin(admin.ModelAdmin):

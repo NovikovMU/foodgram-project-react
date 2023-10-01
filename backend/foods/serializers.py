@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from users.models import Follow
 from users.serializers import UserSerializer
-
 from .constants import (MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD, MIN_AMOUNT,
                         MIN_COOKING_TIME)
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,

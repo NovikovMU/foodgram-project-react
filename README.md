@@ -87,4 +87,4 @@ USER=<username для подключения к серверу>
 Если все данные заполнены правильно, то после каждого пуша в master ветку вам в телеграмм будет приходить сообщение о пересборке dockerа на удалённом сервере.
 
 # Тесты CI/CD
-https://github.com/NovikovMU/foodgram-project-react/actions/workflows/main.yml/badge.svg
+[![Main Taski Workflow](https://github.com/NovikovMU/foodgram-project-react/actions/workflows/main.yml/badge.svg)](https://github.com/NovikovMU/foodgram-project-react/actions/workflows/main.yml)

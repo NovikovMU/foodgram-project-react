@@ -327,9 +327,10 @@ class ShoppingCartCreateSerializer(serializers.ModelSerializer):
         fields = ('recipe', 'user')
 
     def validate(self, attrs):
+        recipe = attrs.get('recipe')
         user = attrs.get('user')
         if ShoppingCart.objects.filter(
-            recipe__user_added_in_shop_cart__user=user
+            recipe=recipe, user=user
         ).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны на этот рецепт.'}

@@ -12,26 +12,9 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .pagination import CommonResultPagination
 from .perimissions import IsAuthenticatedIsOwnerOrReadOnly
-from .serializers import (IngredientSerializer, RecipesCreateUpdateSerializer,
-                          RecipesReadSerializer, ShoppingCartCreateSerializer,
-                          TagSerializer)
-
-
-def favorite_shopping_cart_create_method(recipe, serializer, user):
-    data = {
-        'user': user.id,
-        'recipe': recipe.id,
-    }
-
-    serializer = serializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return serializer.data
-
-
-def favorite_shopping_cart_delete_method(model, recipe, user):
-    get_object_or_404(model, recipe=recipe, user=user).delete()
-    return
+from .serializers import (FavoriteCreateSerializer, IngredientSerializer,
+                          RecipesCreateUpdateSerializer, RecipesReadSerializer,
+                          ShoppingCartCreateSerializer, TagSerializer)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -55,6 +38,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipesReadSerializer
         return self.serializer_class
 
+    def favorite_shopping_cart_create_method(self, recipe, serializer, user):
+        data = {
+            'user': user.id,
+            'recipe': recipe.id,
+        }
+
+        serializer = serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return serializer.data
+
+    def favorite_shopping_cart_delete_method(self, model, recipe, user):
+        get_object_or_404(model, recipe=recipe, user=user).delete()
+        return
+
     @action(
         detail=True,
         methods=('post', 'delete'),
@@ -65,12 +63,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         user = self.request.user
         if self.request.method == 'DELETE':
-            favorite_shopping_cart_delete_method(
+            self.favorite_shopping_cart_delete_method(
                 Favorite, recipe, user
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
-        data = favorite_shopping_cart_create_method(
-            recipe, ShoppingCartCreateSerializer, user
+        data = self.favorite_shopping_cart_create_method(
+            recipe, FavoriteCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -84,11 +82,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         user = self.request.user
         if self.request.method == 'DELETE':
-            favorite_shopping_cart_delete_method(
+            self.favorite_shopping_cart_delete_method(
                 ShoppingCart, recipe, user
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
-        data = favorite_shopping_cart_create_method(
+        data = self.favorite_shopping_cart_create_method(
             recipe, ShoppingCartCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)

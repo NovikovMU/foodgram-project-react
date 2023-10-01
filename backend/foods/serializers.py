@@ -343,3 +343,28 @@ class ShoppingCartCreateSerializer(serializers.ModelSerializer):
         return LiteRecipesSerializer(
             instance.recipe, context=context
         ).data
+
+
+class FavoriteCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('recipe', 'user')
+
+    def validate(self, attrs):
+        recipe = attrs.get('recipe')
+        user = attrs.get('user')
+        if Favorite.objects.filter(
+            recipe=recipe, user=user
+        ).exists():
+            raise serializers.ValidationError(
+                {'error': 'Вы уже подписаны на этот рецепт.'}
+            )
+        return super().validate(attrs)
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return LiteRecipesSerializer(
+            instance.recipe, context=context
+        ).data

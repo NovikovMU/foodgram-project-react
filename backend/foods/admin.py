@@ -2,9 +2,9 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.forms import BaseInlineFormSet
 
+from .constants import MIN_AMOUNT
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
-from .constants import MIN_AMOUNT
 
 
 class IngredientTagInLineFormset(BaseInlineFormSet):

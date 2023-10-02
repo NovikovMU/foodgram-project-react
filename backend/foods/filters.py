@@ -18,7 +18,7 @@ class CustomFilter(filters.FilterSet):
         if self.request.user.is_anonymous:
             return queryset.none()
         if value:
-            return queryset.filter(
+            queryset = queryset.filter(
                 user_add_in_favorite__user=self.request.user
             )
         return queryset
@@ -27,7 +27,7 @@ class CustomFilter(filters.FilterSet):
         if self.request.user.is_anonymous:
             return queryset.none()
         if value:
-            return queryset.filter(
+            queryset = queryset.filter(
                 user_added_in_shop_cart__user=self.request.user
             )
         return queryset

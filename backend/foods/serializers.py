@@ -287,9 +287,6 @@ class SubscribeCreateSerializer(serializers.ModelSerializer):
         )
 
     def to_representation(self, instance):
-        print()
-        print(instance)
-        print()
         request = self.context.get('request')
         context = {'request': request}
         return SubscribeReadSerializer(instance.author, context=context).data

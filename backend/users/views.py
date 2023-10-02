@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -46,16 +46,17 @@ class CustomUserViewSet(UserViewSet):
         """Позволяет подписаться и отписаться на пользователя."""
         user = self.request.user
         author = get_object_or_404(User, id=id)
+        if self.request.method == 'DELETE':
+            get_object_or_404(Follow, user=user, author=author).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
         data = {
             'user': user.pk,
             'author': author.pk,
         }
+
         follow_serializer = SubscribeCreateSerializer(
             data=data, context={'request': request}
         )
-        if self.request.method == 'DELETE':
-            get_object_or_404(Follow, user=user, author=author).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
         follow_serializer.is_valid(raise_exception=True)
         follow_serializer.save()
         return Response(follow_serializer.data, status=status.HTTP_201_CREATED)
@@ -68,7 +69,7 @@ class CustomUserViewSet(UserViewSet):
     def subscriptions(self, request):
         """Показывает всех пользователей, на которых пописан пользователь."""
         user = self.request.user
-        following = Follow.objects.filter(user=user)
+        following = User.objects.filter(following__user=user)
         following = self.paginate_queryset(following)
         follow_serializer = SubscribeReadSerializer(
             data=following,

@@ -38,7 +38,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipesReadSerializer
         return self.serializer_class
 
-    def favorite_shopping_cart_create_method(self, recipe, serializer, user):
+    def favorite_shopping_cart_create(self, recipe, serializer, user):
         data = {
             'user': user.id,
             'recipe': recipe.id,
@@ -49,9 +49,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save()
         return serializer.data
 
-    def favorite_shopping_cart_delete_method(self, model, recipe, user):
+    def favorite_shopping_cart_delete(self, model, recipe, user):
         get_object_or_404(model, recipe=recipe, user=user).delete()
-        return
 
     @action(
         detail=True,
@@ -63,11 +62,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         user = self.request.user
         if self.request.method == 'DELETE':
-            self.favorite_shopping_cart_delete_method(
+            self.favorite_shopping_cart_delete(
                 Favorite, recipe, user
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
-        data = self.favorite_shopping_cart_create_method(
+        data = self.favorite_shopping_cart_create(
             recipe, FavoriteCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)
@@ -82,11 +81,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         user = self.request.user
         if self.request.method == 'DELETE':
-            self.favorite_shopping_cart_delete_method(
+            self.favorite_shopping_cart_delete(
                 ShoppingCart, recipe, user
             )
             return Response(status=status.HTTP_204_NO_CONTENT)
-        data = self.favorite_shopping_cart_create_method(
+        data = self.favorite_shopping_cart_create(
             recipe, ShoppingCartCreateSerializer, user
         )
         return Response(data, status=status.HTTP_201_CREATED)

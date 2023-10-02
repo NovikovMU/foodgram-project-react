@@ -16,18 +16,18 @@ class CustomFilter(filters.FilterSet):
 
     def filter_is_favorited(self, queryset, name, value):
         if self.request.user.is_anonymous:
-            return Recipe.objects.none()
+            return queryset.none()
         if value:
-            return Recipe.objects.filter(
+            return queryset.filter(
                 user_add_in_favorite__user=self.request.user
             )
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         if self.request.user.is_anonymous:
-            return Recipe.objects.none()
+            return queryset.none()
         if value:
-            return Recipe.objects.filter(
+            return queryset.filter(
                 user_added_in_shop_cart__user=self.request.user
             )
         return queryset
@@ -38,7 +38,7 @@ class CustomFilter(filters.FilterSet):
             'author',
             'is_favorited',
             'is_in_shopping_cart',
-            'tags__slug',
+            'tags',
         )
 
 

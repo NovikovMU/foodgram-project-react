@@ -4,7 +4,7 @@ from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
-from users.models import Follow
+from users.models import Follow, User
 from users.serializers import UserSerializer
 from .constants import (MAX_COOKING_TIME, MAX_LENGTH_CHARFIELD, MIN_AMOUNT,
                         MIN_COOKING_TIME)
@@ -79,16 +79,16 @@ class RecipesReadSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         return (
             not self.context['request'].user.is_anonymous
-            and Favorite.objects.filter(
-                user__recipe_in_favorite__recipe=obj
+            and self.context['request'].user.recipe_in_favorite.filter(
+                recipe=obj
             ).exists()
         )
 
     def get_is_in_shopping_cart(self, obj):
         return (
             not self.context['request'].user.is_anonymous
-            and ShoppingCart.objects.filter(
-                user__recipe_in_shop_cart__recipe=obj
+            and self.context['request'].user.recipe_in_shop_cart.filter(
+                recipe=obj
             ).exists()
         )
 
@@ -238,24 +238,13 @@ class LiteRecipesSerializer(serializers.ModelSerializer):
 
 
 class SubscribeReadSerializer(UserSerializer):
-    email = serializers.CharField(source='author.email', read_only=True)
-    id = serializers.IntegerField(source='author.id', read_only=True)
-    username = serializers.CharField(source='author.username', read_only=True)
-    first_name = serializers.CharField(
-        source='author.first_name', read_only=True
-    )
-    last_name = serializers.CharField(
-        source='author.last_name', read_only=True
-    )
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = Follow
+        model = User
         fields = (
-            'user',
-            'author',
             'email',
             'id',
             'username',
@@ -265,14 +254,10 @@ class SubscribeReadSerializer(UserSerializer):
             'recipes',
             'recipes_count',
         )
-        extra_kwargs = {
-            'user': {'write_only': True},
-            'author': {'write_only': True},
-        }
 
     def get_recipes(self, obj):
         limits = self.context.get('request').query_params.get('recipes_limit')
-        recipe = obj.author.recipe
+        recipe = obj.recipe
         result = LiteRecipesSerializer(recipe, many=True).data
         if limits:
             try:
@@ -284,12 +269,12 @@ class SubscribeReadSerializer(UserSerializer):
         return result
 
     def get_is_subscribed(self, obj):
-        return (Follow.objects.filter(
-            user__follower__author=obj.author_id
-        ).exists())
+        return self.context['request'].user.follower.filter(
+            author=obj
+        ).exists()
 
     def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author=obj.author).count()
+        return obj.recipe.count()
 
 
 class SubscribeCreateSerializer(serializers.ModelSerializer):
@@ -302,18 +287,21 @@ class SubscribeCreateSerializer(serializers.ModelSerializer):
         )
 
     def to_representation(self, instance):
+        print()
+        print(instance)
+        print()
         request = self.context.get('request')
         context = {'request': request}
-        return SubscribeReadSerializer(instance, context=context).data
+        return SubscribeReadSerializer(instance.author, context=context).data
 
     def validate(self, attrs):
-        if Follow.objects.filter(
-            user__follower__author=attrs.get('author')
-        ).exists():
+        author = attrs.get('author')
+        user = attrs.get('user')
+        if user.follower.filter(author=author).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны.'}
             )
-        if attrs.get('user') == attrs.get('author'):
+        if user == author:
             raise serializers.ValidationError(
                 {'error': 'Нельзя подписываться на самого себя.'}
             )
@@ -329,9 +317,7 @@ class ShoppingCartCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         recipe = attrs.get('recipe')
         user = attrs.get('user')
-        if ShoppingCart.objects.filter(
-            recipe=recipe, user=user
-        ).exists():
+        if user.recipe_in_shop_cart.filter(recipe=recipe).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны на этот рецепт.'}
             )
@@ -354,9 +340,7 @@ class FavoriteCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         recipe = attrs.get('recipe')
         user = attrs.get('user')
-        if Favorite.objects.filter(
-            recipe=recipe, user=user
-        ).exists():
+        if user.recipe_in_favorite.filter(recipe=recipe).exists():
             raise serializers.ValidationError(
                 {'error': 'Вы уже подписаны на этот рецепт.'}
             )

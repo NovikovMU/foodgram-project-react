@@ -54,11 +54,7 @@ class CustomUserViewSet(UserViewSet):
             data=data, context={'request': request}
         )
         if self.request.method == 'DELETE':
-            if not Follow.objects.filter(user=user, author=author).exists():
-                raise serializers.ValidationError(
-                    {'error': 'Вы не подписаны на этого пользователя.'}
-                )
-            Follow.objects.filter(user=user, author=author).delete()
+            get_object_or_404(Follow, user=user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         follow_serializer.is_valid(raise_exception=True)
         follow_serializer.save()

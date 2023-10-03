@@ -238,7 +238,6 @@ class LiteRecipesSerializer(serializers.ModelSerializer):
 
 
 class SubscribeReadSerializer(UserSerializer):
-    is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
@@ -257,7 +256,7 @@ class SubscribeReadSerializer(UserSerializer):
 
     def get_recipes(self, obj):
         limits = self.context.get('request').query_params.get('recipes_limit')
-        recipe = obj.recipe
+        recipe = obj.recipes
         result = LiteRecipesSerializer(recipe, many=True).data
         if limits:
             try:
@@ -274,7 +273,7 @@ class SubscribeReadSerializer(UserSerializer):
         ).exists()
 
     def get_recipes_count(self, obj):
-        return obj.recipe.count()
+        return obj.recipes.count()
 
 
 class SubscribeCreateSerializer(serializers.ModelSerializer):

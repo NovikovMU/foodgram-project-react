@@ -9,6 +9,11 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
 
 class IngredientTagInLineFormset(BaseInlineFormSet):
     def clean(self):
+        form = self.forms
+        print()
+        print(self.__dict__)
+        print(form)
+        print()
         result_list = self.cleaned_data
         for resut in reversed(result_list):
             if not resut or resut['DELETE'] is True:

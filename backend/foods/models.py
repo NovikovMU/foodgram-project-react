@@ -42,7 +42,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='recipe'
+        related_name='recipes'
     )
     name = models.CharField(max_length=MAX_LENGTH_CHARFIELD_NAME)
     image = models.ImageField(
@@ -51,12 +51,12 @@ class Recipe(models.Model):
     text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient,
-        related_name='recipe',
+        related_name='recipes',
         through='RecipeIngredient',
     )
     tags = models.ManyToManyField(
         Tag,
-        related_name='recipe',
+        related_name='recipes',
         through='RecipeTag'
     )
     cooking_time = models.PositiveIntegerField(

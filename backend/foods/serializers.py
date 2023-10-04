@@ -169,7 +169,7 @@ class RecipesCreateUpdateSerializer(serializers.ModelSerializer):
         ingredient_array = [x.get('ingredient')['id'] for x in ingredients]
         if len(ingredient_array) != len(set(ingredient_array)):
             raise serializers.ValidationError(
-                {'tag_error': 'Ингредиент должны быть разными.'}
+                {'ingredient_error': 'Ингредиент должны быть разными.'}
             )
         tags = attrs.get('tags')
         if not tags:
@@ -241,30 +241,21 @@ class SubscribeReadSerializer(UserSerializer):
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta(UserSerializer.Meta):
         model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count',
-        )
+        fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
 
     def get_recipes(self, obj):
         limits = self.context.get('request').query_params.get('recipes_limit')
-        recipe = obj.recipes
-        result = LiteRecipesSerializer(recipe, many=True).data
+        recipe = obj.recipes.all()
         if limits:
             try:
-                result = result[:int(limits)]
+                recipe = recipe[:int(limits)]
             except ValueError:
                 raise serializers.ValidationError({
                     'recipes_limit_error': 'Нельзя вводить буквы алфавита.'
                 })
+        result = LiteRecipesSerializer(recipe, many=True).data
         return result
 
     def get_is_subscribed(self, obj):

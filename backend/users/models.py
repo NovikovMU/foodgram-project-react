@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from foods.constants import MAX_CHAR_EMAIL_LENGTH, MAX_CHAR_USER_LENGTH
@@ -48,3 +49,8 @@ class Follow(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user} - {self.author}'
+
+    def clean(self):
+        if self.user == self.author:
+            raise ValidationError("Вы не можете подписаться на самого себя")
+        return super().clean()

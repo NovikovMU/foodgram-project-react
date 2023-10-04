@@ -9,17 +9,13 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
 
 class IngredientTagInLineFormset(BaseInlineFormSet):
     def clean(self):
-        form = self.forms
-        print()
-        print(self.__dict__)
-        print(form)
-        print()
-        result_list = self.cleaned_data
-        for resut in reversed(result_list):
-            if not resut or resut['DELETE'] is True:
-                result_list.pop(result_list.index(resut))
-        if not result_list:
-            raise ValidationError('Должно быть хотя бы одно поле.')
+        if self.is_valid():
+            result_list = self.cleaned_data
+            for resut in reversed(result_list):
+                if not resut or resut['DELETE'] is True:
+                    result_list.pop(result_list.index(resut))
+            if not result_list:
+                raise ValidationError('Должно быть хотя бы одно поле.')
         return super().clean()
 
 
